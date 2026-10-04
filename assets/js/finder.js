@@ -51,7 +51,19 @@
   const dou = (term) => 'https://www.in.gov.br/consulta/-/buscar/dou?q=' + encodeURIComponent(term) + '&s=todos&exactDate=all&sortType=0';
 
   /* ---------- Página ---------- */
-  const form = { nome: '', rg: '', rgUf: '', cpf: '', insc: '', uf: '', org: '', extra: '' };
+  const form = { nome: '', rg: '', rgUf: '', cpf: '', insc: '', uf: '', org: '', extra: '', banca: '' };
+
+  // Bancas ligadas ao concurso: a escolhida no formulário + as da Agenda para o mesmo órgão e estado.
+  function relatedBancas() {
+    const out = [];
+    const push = (b) => { if (b && !out.includes(b)) out.push(b); };
+    if (form.banca) push(A.bancas.list.find((b) => b.host === form.banca));
+    const ag = A.agenda ? A.agenda.itens : [];
+    const orgName = form.org && DATA.tipos[form.org] ? A.norm(DATA.tipos[form.org].nome) : '';
+    ag.filter((x) => x.banca && (!form.uf || x.uf === form.uf) && (!orgName || A.norm(x.orgao).includes(orgName)))
+      .forEach((x) => push(A.bancas.byName(x.banca)));
+    return out.slice(0, 3);
+  }
 
   route(/^\/meu-nome(?:\/([A-Za-z]{2}))?(?:\/([a-z]+))?$/, 'meu-nome', function (uf, org) {
     const saved = Store.state.nameWatch || {};
@@ -78,6 +90,8 @@
             '<label class="field"><span>CPF <span class="muted">(opcional)</span></span><input class="input" id="f-cpf" name="cpf" value="' + esc(form.cpf) + '" placeholder="Usamos só os 6 dígitos do meio" inputmode="numeric"></label>' +
             '<label class="field">Estado do concurso<select class="select" id="f-uf" name="uf"><option value="">Federal / não sei</option>' + DATA.estados.map((x) => '<option value="' + x.uf + '"' + (form.uf === x.uf ? ' selected' : '') + '>' + esc(x.nome) + '</option>').join('') + '</select></label>' +
             '<label class="field">Órgão<select class="select" id="f-org" name="org"><option value="">Todos do estado</option>' + orgOptions + '</select></label>' +
+            '<label class="field full"><span>Banca do concurso <span class="muted">(se souber)</span></span><select class="select" id="f-banca" name="banca"><option value="">Não sei / procurar em todas</option>' +
+              A.bancas.list.map((b) => '<option value="' + esc(b.host) + '"' + (form.banca === b.host ? ' selected' : '') + '>' + esc(b.n) + '</option>').join('') + '</select></label>' +
             '<label class="field full"><span>Palavra-chave do concurso <span class="muted">(opcional)</span></span><input class="input" id="f-extra" name="extra" value="' + esc(form.extra) + '" placeholder="Ex.: soldado, CFSd 2026, escrevente"></label>' +
             '<div class="btn-row full"><button class="btn btn-primary" type="submit">' + icon('search') + 'Montar minhas buscas</button>' +
               '<button class="btn" type="button" id="f-save">' + icon('star') + 'Salvar para buscar de novo</button></div>' +
@@ -147,9 +161,19 @@
                 ['Abrir o site', it.u]);
             });
           }
-          // 3. Bancas
+          // 3. Bancas ligadas ao concurso: página onde a banca chama o candidato
+          const orgLabel = e && form.org && e.items[form.org] ? e.items[form.org].short + ' ' + e.uf : '';
+          relatedBancas().forEach((b) => {
+            const l = A.bancas.links(b, extra || orgLabel);
+            html += '<section class="panel finder-group banca-group"><div class="finder-head"><span class="tile-icon">' + icon('clipboard') + '</span><div class="grow"><h3>Banca: ' + esc(b.n) + '</h3>' +
+              '<p class="muted small">É aqui que a banca publica convocações, resultados e a lista de quem foi chamado.</p></div></div>' +
+              '<div class="btn-row">' +
+                '<a class="btn btn-primary btn-sm" href="' + esc(l.chamada) + '" target="_blank" rel="noopener">' + icon('flag') + 'Abrir onde a banca chama o candidato ' + icon('external') + '</a>' +
+                A.extLink(l.abrir, 'btn btn-sm', icon('external') + 'Página de concursos da banca') + '</div>' +
+              '<div class="list">' + main.map((x) => row(x.label, 'site:' + b.host + ' ' + x.term + kw, google('site:' + b.host + ' ' + x.term + kw))).join('') + '</div></section>';
+          });
           const bancaSites = '(' + BANCAS.map((b) => 'site:' + b).join(' OR ') + ')';
-          html += group('Sites das bancas organizadoras', 'clipboard', 'Resultados por etapa, notas e recursos costumam sair primeiro na banca.',
+          html += group(relatedBancas().length ? 'Outras bancas' : 'Sites das bancas organizadoras', 'clipboard', 'Resultados por etapa, notas e recursos costumam sair primeiro na banca.',
             main.map((x) => row(x.label, x.term + kw + ' ' + bancaSites, google(x.term + kw + ' ' + bancaSites), '', x.term + kw + ' — em ' + BANCAS.length + ' bancas')));
           // 4. Diário Oficial da União
           if (nome || insc) {
@@ -175,7 +199,7 @@
         });
         $('#f-save', view).addEventListener('click', () => {
           read();
-          Store.update((s) => { s.nameWatch = { nome: form.nome, rg: form.rg, rgUf: form.rgUf, insc: form.insc, uf: form.uf, org: form.org, extra: form.extra }; });
+          Store.update((s) => { s.nameWatch = { nome: form.nome, rg: form.rg, rgUf: form.rgUf, insc: form.insc, uf: form.uf, org: form.org, extra: form.extra, banca: form.banca }; });
           toast('Busca salva neste aparelho. Ela aparece na página inicial.');
         });
         out.addEventListener('click', (ev) => {
