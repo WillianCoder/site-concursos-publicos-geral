@@ -338,7 +338,7 @@
     const vencendo = ativos.filter((p) => p.ate && (new Date(p.ate) - new Date(today())) / 86400000 <= 7);
     const radarRecent = (RADAR.items || []).filter((x) => (new Date(today()) - new Date(x.d)) / 86400000 <= 7).length;
     const check = (ok, txt, goTab) => '<div class="row"><span class="badge ' + (ok ? 'ok' : 'warn') + '">' + (ok ? '✓' : '!') + '</span><div class="grow"><div class="title" style="white-space:normal">' + txt + '</div></div>' + (goTab ? '<button class="btn btn-sm" data-go="' + goTab + '">Configurar</button>' : '') + '</div>';
-    const site = cfg.siteUrl || ('https://' + session.owner.toLowerCase() + '.github.io/' + session.repo + '/');
+    const site = cfg.siteUrl || new URL('./', location.href).href;
     const link = (href, t, d) => '<a class="tile" href="' + esc(href) + '" target="_blank" rel="noopener"><h3>' + esc(t) + '</h3><p>' + esc(d) + '</p></a>';
     return '<div class="kpis">' +
         '<div class="kpi"><b>' + brl(receita) + '</b><span>receita mensal dos patrocínios ativos</span></div>' +
