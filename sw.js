@@ -1,5 +1,5 @@
 /* Atlas Concursos — service worker: funciona offline depois do primeiro acesso. */
-const CACHE = 'atlas-v2';
+const CACHE = 'atlas-v3';
 const SHELL = [
   './',
   'index.html',
@@ -11,6 +11,9 @@ const SHELL = [
   'assets/js/data.js',
   'assets/js/app.js',
   'assets/js/tools.js',
+  'assets/js/features.js',
+  'assets/js/theme.js',
+  'data/radar.js',
   'assets/js/vendor/qrcode.js',
   'assets/js/monetize.js',
   'assets/js/cloud.js',
@@ -32,7 +35,9 @@ self.addEventListener('activate', (e) => {
 // Arquivos do próprio site: rede primeiro (sempre atualizado), cache como reserva offline.
 self.addEventListener('fetch', (e) => {
   const req = e.request;
-  if (req.method !== 'GET' || new URL(req.url).origin !== self.location.origin) return;
+  const url = new URL(req.url);
+  if (req.method !== 'GET' || url.origin !== self.location.origin) return;
+  if (url.pathname.includes('admin')) return;   // o painel nunca fica em cache
   e.respondWith(
     fetch(req)
       .then((res) => {

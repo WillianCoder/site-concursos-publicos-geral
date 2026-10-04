@@ -2,6 +2,8 @@
 <html lang="pt-BR" data-theme="dark">
 <head>
   <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.googletagservices.com https://*.doubleclick.net https://*.adtrafficquality.google https://fundingchoicesmessages.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://*.google.com https://*.googlesyndication.com https://*.doubleclick.net https://*.adtrafficquality.google https://*.firebaseio.com https://*.firebaseapp.com https://www.gstatic.com; frame-src https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.firebaseapp.com https://*.adtrafficquality.google; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Política de Privacidade · Atlas Concursos</title>
   <meta name="description" content="Como o Atlas Concursos trata seus dados, cookies e anúncios.">
@@ -10,12 +12,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/styles.css">
-  <script>
-    try {
-      var s = JSON.parse(localStorage.getItem('atlas:v1') || '{}');
-      if (s.settings && s.settings.theme) document.documentElement.dataset.theme = s.settings.theme;
-    } catch (e) {}
-  </script>
+  <script src="assets/js/theme.js"></script>
   <style>
     .doc { max-width: 780px; margin: 0 auto; padding: 40px 16px 80px; position: relative; z-index: 1; }
     .doc h1 { font-size: clamp(26px, 4vw, 36px); margin: 18px 0 8px; }

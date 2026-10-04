@@ -1,0 +1,33 @@
+/* Painel do Administrador — complementa styles.css */
+body { min-height: 100vh; }
+.adm-top {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 12px clamp(16px, 3vw, 36px);
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+}
+.adm-top-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.adm-main { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 26px clamp(16px, 3vw, 36px) 80px; }
+.adm-login { max-width: 560px; margin: 4vh auto 0; display: flex; flex-direction: column; gap: 14px; }
+.adm-login ol { margin: 0; padding-left: 20px; color: var(--muted); font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
+.adm-tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin: 18px 0; scrollbar-width: thin; }
+.adm-tabs .chip { white-space: nowrap; padding: 8px 14px; font-size: 13px; }
+.adm-section { display: flex; flex-direction: column; gap: 14px; }
+.adm-item { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.adm-item-head { display: flex; align-items: center; gap: 10px; }
+.adm-item-head h3 { flex: 1; font-size: 15px; font-family: var(--font); }
+.adm-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.adm-grid .full { grid-column: 1 / -1; }
+.adm-help { font-size: 13px; color: var(--muted); font-weight: 400; }
+.adm-help code, .adm-login code { font-size: 12px; padding: 1px 6px; border-radius: 6px; background: var(--input); border: 1px solid var(--border); }
+select[multiple].select { min-height: 120px; }
+.adm-qr { width: 160px; background: #fff; border-radius: 12px; padding: 8px; }
+.adm-qr svg { width: 100%; height: auto; }
+.adm-links { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+@media (max-width: 600px) {
+  .adm-top .brand-text { display: none; }
+  .adm-top-actions { width: 100%; margin-left: 0; }
+  .adm-top-actions .btn { flex: 1; }
+}

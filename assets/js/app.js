@@ -29,11 +29,13 @@
     try { const x = new URL(u); return (x.hostname.replace(/^www\d?\./, '') + x.pathname.replace(/\/$/, '')).replace(/\/pt-br$/, ''); }
     catch (e) { return u; }
   }
+  // Segurança: só aceitamos endereços http(s). Bloqueia "javascript:", "data:" etc.
+  const safeUrl = (u) => (/^https?:\/\/[^\s"'<>]+$/i.test(String(u || '').trim()) ? String(u).trim() : '');
   function normalizeUrl(u) {
     u = String(u || '').trim();
     if (!u) return '';
     if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
-    try { return new URL(u).href; } catch (e) { return ''; }
+    try { return safeUrl(new URL(u).href); } catch (e) { return ''; }
   }
   const googleSite = (u, q = 'concurso edital') => {
     let h = u; try { h = new URL(u).hostname; } catch (e) {}
@@ -122,7 +124,10 @@
     load() {
       try {
         const raw = JSON.parse(localStorage.getItem(KEY) || 'null');
-        if (raw && typeof raw === 'object') this.state = merge(defaults(), raw);
+        if (raw && typeof raw === 'object') {
+          this.state = sanitize(merge(defaults(), raw));
+          localStorage.setItem(KEY, JSON.stringify(this.state));   // grava a versão higienizada
+        }
       } catch (e) { /* armazenamento indisponível: segue em memória */ }
       return this.state;
     },
@@ -133,9 +138,23 @@
       listeners.forEach((fn) => { try { fn(this.state, opts); } catch (e) { console.error(e); } });
     },
     update(fn, opts) { fn(this.state); this.save(opts); },
-    replace(next, opts) { this.state = merge(defaults(), next || {}); this.save(opts); },
+    replace(next, opts) { this.state = sanitize(merge(defaults(), next || {})); this.save(opts); },
     on(fn) { listeners.push(fn); }
   };
+  // Limpa dados vindos do navegador ou de um backup: remove links inseguros e tipos inválidos.
+  function sanitize(st) {
+    const favs = {};
+    Object.values(st.favs || {}).forEach((f) => {
+      const u = f && safeUrl(f.u);
+      if (u) favs[u] = { u, n: String(f.n || u).slice(0, 200), d: String(f.d || '').slice(0, 500), folder: String(f.folder || 'Geral').slice(0, 60), note: String(f.note || '').slice(0, 1000), at: +f.at || Date.now(), custom: !!f.custom };
+    });
+    st.favs = favs;
+    st.recent = (Array.isArray(st.recent) ? st.recent : []).filter((r) => r && safeUrl(r.u)).slice(0, 12);
+    st.exams = (Array.isArray(st.exams) ? st.exams : []).filter((e) => e && e.id).map((e) => Object.assign(e, { edital: safeUrl(e.edital) }));
+    ['subjects', 'revisions', 'folders'].forEach((k) => { if (!Array.isArray(st[k])) st[k] = []; });
+    if (typeof st.notes !== 'string') st.notes = '';
+    return st;
+  }
   function merge(base, extra) {
     for (const k in extra) {
       if (extra[k] && typeof extra[k] === 'object' && !Array.isArray(extra[k]) && base[k] && typeof base[k] === 'object' && !Array.isArray(base[k])) {
@@ -251,7 +270,7 @@
   function hue(s) { let h = 0; for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) % 360; return h; }
   const mono = (name, key) => '<span class="mono" style="--h:' + hue(key || name) + '" aria-hidden="true">' + esc(abbr(name)) + '</span>';
   const isFav = (u) => !!Store.state.favs[u];
-  const extLink = (u, cls, inner, name) => '<a class="' + cls + '" href="' + esc(u) + '" target="_blank" rel="noopener" data-track="' + esc(u) + '"' + (name ? ' data-name="' + esc(name) + '"' : '') + '>' + inner + '</a>';
+  const extLink = (u, cls, inner, name) => '<a class="' + cls + '" href="' + esc(safeUrl(u) || '#') + '" target="_blank" rel="noopener" data-track="' + esc(u) + '"' + (name ? ' data-name="' + esc(name) + '"' : '') + '>' + inner + '</a>';
 
   function card(it, opts) {
     opts = opts || {};
@@ -264,6 +283,7 @@
         favBtn(it.u, fav) +
       '</div>' +
       (it.d && it.d !== title ? '<p class="desc">' + esc(it.d) + '</p>' : '') +
+      cardBadges.map((fn) => { try { return fn(it) || ''; } catch (e) { return ''; } }).join('') +
       (subs.length ? '<div class="subs">' + subs.map((s) => extLink(s[1], 'chip', icon(s[2] || 'external') + esc(s[0]), s[0])).join('') + '</div>' : '') +
       '<div class="card-actions">' +
         extLink(it.u, 'btn btn-primary btn-sm btn-open', 'Acessar site ' + icon('external')) +
@@ -395,6 +415,8 @@
   /* ---------- Navegação lateral ---------- */
   const extraNav = [];   // tools.js adiciona itens em "Minha área"
   const projectNav = []; // monetize.js adiciona "Apoie" e "Anuncie"
+  const topNav = [];     // features.js adiciona "Radar de Editais" e "Descubra seu concurso"
+  const cardBadges = []; // funções (item) => html de selos extras nos cards
   const afterRender = []; // funções chamadas depois de cada página renderizada
   function renderNav() {
     const s = Store.state;
@@ -405,6 +427,7 @@
       return '<a class="' + active.trim() + '" href="' + href + '">' + icon(ic) + '<span>' + esc(label) + '</span>' + (count != null ? '<span class="count">' + count + '</span>' : '') + '</a>';
     };
     let html = link('#/', 'home', 'Início') + link('#/explorar', 'grid', 'Explorar tudo', totalSites) + link('#/estados', 'map', 'Estados', 27);
+    topNav.forEach((n) => { html += link(n.href, n.icon, n.label, n.count ? n.count(s) : null); });
     const me = ufBy[s.profile.uf];
     if (me) html += link('#/uf/' + me.uf, 'flag', 'Meu estado: ' + me.uf);
     html += '<div class="nav-label">Categorias</div>';
@@ -1090,9 +1113,9 @@
      API pública para os outros módulos
      ========================================================= */
   const Atlas = window.Atlas = {
-    $, $$, esc, norm, uid, icon, hydrateIcons, toast, dateKey, addDays, daysUntil, fmtDate, fmtMin, pad,
+    $, $$, esc, norm, uid, safeUrl, icon, hydrateIcons, toast, dateKey, addDays, daysUntil, fmtDate, fmtMin, pad,
     Store, REG, route, render, current, card, mono, emptyBox, extLink, hostOf, google, download,
-    nav: extraNav, navProject: projectNav, afterRender, pages, accountHooks, renderNav, renderAccountChip, defaults, copy,
+    nav: extraNav, navProject: projectNav, navTop: topNav, cardBadges, isFav, toggleFav, ufBy, afterRender, pages, accountHooks, renderNav, renderAccountChip, defaults, copy,
     cloud: null
   };
 
@@ -1100,6 +1123,10 @@
      Inicialização
      ========================================================= */
   function start() {
+    // Anti-clickjacking: no domínio oficial, o site não pode ser exibido dentro de outro site.
+    try {
+      if (CFG.siteUrl && window.top !== window.self && new URL(CFG.siteUrl).origin === location.origin) window.top.location = location.href;
+    } catch (e) { document.documentElement.style.display = 'none'; }
     Store.load();
     applyTheme();
     buildCatalog();

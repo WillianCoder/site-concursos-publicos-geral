@@ -591,3 +591,15 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; 
 .rules { margin: 6px 0 0; padding-left: 20px; color: var(--muted); display: flex; flex-direction: column; gap: 6px; }
 .rules b { color: var(--text); }
 .pro-box { background: radial-gradient(420px 200px at 100% 0%, rgba(139, 92, 246, .2), transparent 70%), var(--panel); }
+
+/* ---------- Radar e Descubra ---------- */
+.radar-badge {
+  display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;
+  font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 99px;
+  color: var(--c3); background: color-mix(in srgb, var(--c3) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c3) 35%, transparent);
+}
+.radar-badge .i { width: 13px; height: 13px; animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .35; } }
+.quiz { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.quiz-q h3 { font-size: 16px; margin-bottom: 12px; }

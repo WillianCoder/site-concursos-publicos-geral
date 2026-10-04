@@ -2,6 +2,8 @@
 <html lang="pt-BR" data-theme="dark">
 <head>
   <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.googletagservices.com https://*.doubleclick.net https://*.adtrafficquality.google https://fundingchoicesmessages.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://*.google.com https://*.googlesyndication.com https://*.doubleclick.net https://*.adtrafficquality.google https://*.firebaseio.com https://*.firebaseapp.com https://www.gstatic.com; frame-src https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.firebaseapp.com https://*.adtrafficquality.google; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Atlas Concursos — todos os sites de concursos públicos do Brasil em um só lugar</title>
   <meta name="description" content="Portal gratuito que reúne os sites oficiais de concursos públicos do Brasil: bancas, diários oficiais, polícias, tribunais e órgãos dos 27 estados. Salve seus links, organize seus estudos e acompanhe suas provas.">
@@ -15,13 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/styles.css">
-  <script>
-    // Aplica o tema salvo antes da pintura para evitar "piscar".
-    try {
-      var s = JSON.parse(localStorage.getItem('atlas:v1') || '{}');
-      if (s.settings && s.settings.theme) document.documentElement.dataset.theme = s.settings.theme;
-    } catch (e) {}
-  </script>
+  <script src="assets/js/theme.js"></script>
 </head>
 <body>
   <div class="bg-grid" aria-hidden="true"></div>
@@ -118,8 +114,10 @@
 
   <script src="assets/js/config.js"></script>
   <script src="assets/js/data.js"></script>
+  <script src="data/radar.js"></script>
   <script src="assets/js/app.js"></script>
   <script src="assets/js/tools.js"></script>
+  <script src="assets/js/features.js"></script>
   <script src="assets/js/vendor/qrcode.js"></script>
   <script src="assets/js/monetize.js"></script>
   <script src="assets/js/cloud.js"></script>

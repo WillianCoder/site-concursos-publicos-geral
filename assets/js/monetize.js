@@ -68,7 +68,7 @@
   /* =========================================================
      Cards patrocinados e recomendações
      ========================================================= */
-  const ativos = () => (CFG.patrocinios || []).filter((p) => p && p.url && (!p.ate || p.ate >= dateKey()));
+  const ativos = () => (CFG.patrocinios || []).filter((p) => p && A.safeUrl(p.url) && (!p.ate || p.ate >= dateKey()));
   const sponsorCard = (p) =>
     '<article class="card sponsor">' +
       '<div class="card-top">' + A.mono(p.titulo, p.url) +
@@ -79,7 +79,7 @@
     '</article>';
 
   function recomendadosHtml() {
-    const list = (CFG.recomendados || []).filter((r) => r && r.url);
+    const list = (CFG.recomendados || []).filter((r) => r && A.safeUrl(r.url));
     if (!list.length) return '';
     return '<section class="section" data-monet="rec"><div class="section-head"><h2>' + icon('star') + 'Recomendados para concurseiros</h2></div>' +
       '<div class="cards">' + list.map((r) =>
@@ -97,6 +97,8 @@
     if (cur.name === 'categoria') return 'c:' + cur.params[0];
     if (cur.name === 'uf') return 'uf:' + String(cur.params[0]).toUpperCase();
     if (cur.name === 'ferramentas') return 'ferramentas';
+    if (cur.name === 'radar') return 'radar';
+    if (cur.name === 'descubra') return 'descubra';
     return '';
   }
 

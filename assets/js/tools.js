@@ -116,6 +116,7 @@
           const f = Object.fromEntries(new FormData(ev.target));
           let edital = (f.edital || '').trim();
           if (edital && !/^https?:\/\//i.test(edital)) edital = 'https://' + edital;
+          edital = A.safeUrl(edital);
           Store.update((s) => s.exams.push({ id: uid(), nome: f.nome.trim(), cargo: f.cargo.trim(), banca: f.banca.trim(), edital, inscricao: f.inscricao, data: f.data, status: f.status }));
           toast('Concurso adicionado!');
           render();

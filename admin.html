@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.github.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Painel do Administrador · Atlas Concursos</title>
+  <link rel="icon" href="assets/img/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <link rel="stylesheet" href="assets/css/admin.css">
+  <script src="assets/js/theme.js"></script>
+</head>
+<body>
+  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="bg-glow" aria-hidden="true"></div>
+
+  <header class="adm-top">
+    <a class="brand" href="./"><img src="assets/img/logo.svg" alt="" width="32" height="32"><span class="brand-text">Atlas<b>Concursos</b></span></a>
+    <span class="tag">Admin</span>
+    <div class="adm-top-actions">
+      <span id="adm-dirty" class="badge warn" hidden>Alterações não publicadas</span>
+      <button class="btn btn-primary btn-sm" id="adm-save" hidden>Salvar e publicar</button>
+      <button class="btn btn-sm btn-ghost" id="adm-logout" hidden>Sair</button>
+    </div>
+  </header>
+
+  <main class="adm-main" id="adm"></main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/data.js"></script>
+  <script src="data/radar.js"></script>
+  <script src="assets/js/vendor/qrcode.js"></script>
+  <script src="assets/js/admin.js"></script>
+</body>
+</html>

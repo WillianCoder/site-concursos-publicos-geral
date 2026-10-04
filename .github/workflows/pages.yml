@@ -3,6 +3,9 @@ name: Publicar no GitHub Pages
 on:
   push:
     branches: [main]
+  workflow_run:
+    workflows: ['Radar de Editais']   # republica o site quando o Radar encontra novidades
+    types: [completed]
   workflow_dispatch:
 
 permissions:
