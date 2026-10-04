@@ -1,0 +1,24 @@
+name: Verificar links do catálogo
+
+on:
+  schedule:
+    - cron: '17 9 * * 1'   # toda segunda-feira
+  workflow_dispatch:
+  pull_request:
+    paths: ['assets/js/data.js', 'scripts/check-links.mjs']
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Validar estrutura do catálogo
+        run: node scripts/check-links.mjs --list > /dev/null
+      - name: Testar se os sites respondem (relatório no resumo da execução)
+        run: node scripts/check-links.mjs

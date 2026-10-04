@@ -1,0 +1,4 @@
+# ads.txt — autoriza quem pode vender anúncios neste site.
+# Depois que o Google AdSense aprovar sua conta, troque a linha abaixo
+# pelo seu ID de editor (ele aparece no painel do AdSense) e remova o "#":
+# google.com, pub-0000000000000000, DIRECT, f08c47fec0942fa0
