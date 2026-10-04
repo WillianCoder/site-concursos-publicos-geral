@@ -1,6 +1,6 @@
 /*
  * Atlas Concursos — diferenciais.
- *  - Radar de Editais: novidades detectadas todo dia nos sites oficiais (data/radar.js).
+ *  - Bancas: cadastro com apelidos e atalhos (inscrições abertas, convocações).
  *  - Descubra seu concurso: teste rápido que indica carreiras e os sites oficiais certos.
  */
 (function () {
@@ -8,11 +8,6 @@
   const A = window.Atlas;
   const { $, $$, esc, icon, toast, dateKey, daysUntil, fmtDate, route, Store } = A;
   const DATA = window.ATLAS_DATA;
-  const R = window.ATLAS_RADAR || { items: [] };
-  const items = (R.items || []).filter((x) => x && A.safeUrl(x.u));
-  const recentBySite = new Map();
-  items.forEach((x) => { if (daysUntil(x.d) >= -7 && !recentBySite.has(x.site)) recentBySite.set(x.site, x); });
-  const last7 = items.filter((x) => daysUntil(x.d) >= -7).length;
 
   /* =========================================================
      Bancas: cadastro com apelidos, para ligar concursos às bancas
@@ -52,6 +47,7 @@
     };
   }
   A.bancas = { list: BANCAS, find: bancasIn, links: bancaLinks, byName: (name) => bancasIn(name)[0] || null };
+  A.gsearch = gsearch;
 
   // Na categoria Bancas: atalhos para inscrições abertas e convocações de cada banca.
   A.cardBadges.push((it) => {
@@ -61,173 +57,6 @@
     return '<div class="subs">' +
       '<a class="chip find-chip" href="' + esc(l.abertas) + '" target="_blank" rel="noopener">' + icon('calendar') + 'Inscrições abertas</a>' +
       '<a class="chip find-chip" href="' + esc(l.chamada) + '" target="_blank" rel="noopener">' + icon('flag') + 'Convocações e resultados</a></div>';
-  });
-
-  /* =========================================================
-     Radar de Editais
-     ========================================================= */
-  A.navTop.push({ href: '#/radar', icon: 'radar', label: 'Radar de Editais', count: () => last7 || null });
-  A.pages.push({ n: 'Radar de Editais (novidades nos sites oficiais)', href: '#/radar', ic: 'radar', sub: 'Diferencial' });
-
-  // Selo "Novidade no Radar" nos cards dos sites que publicaram algo nos últimos 7 dias.
-  A.cardBadges.push((it) => {
-    const x = recentBySite.get(it.u);
-    return x ? '<a class="radar-badge" href="#/radar" title="' + esc(x.t) + '">' + icon('radar') + 'Novidade detectada ' + (daysUntil(x.d) === 0 ? 'hoje' : 'em ' + fmtDate(x.d)) + '</a>' : '';
-  });
-
-  const ui = { uf: '', mine: false, q: '', abertura: false, scope: '', recent: true };
-  const ABERTURA = /(inscri[cç]|abertura|edital n|concurso p[uú]blico|processo seletivo)/i;
-
-  // Grupos de sites para a busca de inscrições abertas.
-  function scopeGroups(scope) {
-    const items = Array.from(A.REG.values());
-    const SKIP = ['legislacao', 'estudo', 'noticias', 'servicos'];
-    const pick = (fn) => items.filter((it) => !SKIP.includes(it.cat) && fn(it));
-    const groups = [];
-    const add = (nome, list) => { if (list.length) groups.push({ nome, list }); };
-    if (scope.startsWith('uf:')) { const uf = scope.slice(3); add(A.ufBy[uf] ? A.ufBy[uf].nome : uf, pick((it) => it.uf === uf)); }
-    else if (scope === 'federal') add('Órgãos federais', pick((it) => ['federal', 'controle', 'legislativo', 'diarios'].includes(it.cat)));
-    else if (scope === 'seguranca') { add('Segurança federal e Forças Armadas', pick((it) => it.cat === 'seguranca')); add('Polícias e Bombeiros dos estados', pick((it) => ['pm', 'pc', 'cbm'].includes(it.tipo))); }
-    else if (scope === 'justica') { add('Tribunais superiores, TRFs e MPU', pick((it) => it.cat === 'justica')); add('TJs, MPs, Defensorias, TREs e TRTs', pick((it) => ['tj', 'mp', 'dpe', 'tre', 'trt'].includes(it.tipo))); }
-    else if (scope === 'bancas') add('Bancas organizadoras', pick((it) => it.cat === 'bancas'));
-    else if (scope === 'estatais') add('Bancos e estatais', pick((it) => it.cat === 'estatais'));
-    else if (scope === 'todos') {
-      add('Bancas organizadoras', pick((it) => it.cat === 'bancas'));
-      add('Órgãos federais', pick((it) => ['federal', 'controle', 'legislativo', 'seguranca', 'justica', 'diarios', 'estatais'].includes(it.cat)));
-      DATA.estados.forEach((e) => add(e.nome, pick((it) => it.uf === e.uf)));
-    }
-    return groups;
-  }
-  // Divide em partes de até 8 sites (o Google aceita até 32 palavras por pesquisa).
-  function searchParts(list, recent) {
-    const sites = Array.from(new Set(list.map((it) => A.hostOf(it.u)).filter((h) => h && h.length < 60)));
-    const parts = [];
-    for (let i = 0; i < sites.length; i += 8) {
-      const chunk = sites.slice(i, i + 8);
-      parts.push({ n: chunk.length, url: gsearch(OPEN_TERMS + ' (' + chunk.map((h) => 'site:' + h).join(' OR ') + ')', recent), sites: chunk });
-    }
-    return parts;
-  }
-  const when = (d) => { const n = -daysUntil(d); return n === 0 ? 'Hoje' : n === 1 ? 'Ontem' : fmtDate(d); };
-
-  route(/^\/radar$/, 'radar', function () {
-    const ufs = Array.from(new Set(items.map((x) => x.uf).filter(Boolean))).sort();
-    const myUf = Store.state.profile.uf;
-    const updated = R.updatedAt ? new Date(R.updatedAt).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }) : null;
-    return {
-      title: 'Radar de Editais',
-      crumbs: [['Início', '#/'], ['Radar de Editais', '#/radar']],
-      html:
-        '<div class="page-head"><div><span class="eyebrow">' + icon('radar') + 'Exclusivo do Atlas</span><h1>Radar de Editais</h1>' +
-        '<p>Todo dia, o Atlas visita os sites oficiais do catálogo e mostra aqui os <b>links novos</b> com "edital", "concurso", "processo seletivo", "convocação" ou "gabarito". Você fica sabendo sem precisar abrir site por site.</p></div></div>' +
-        '<div class="kpis">' +
-          '<div class="kpi"><b>' + (R.checked || DATA.estados.length) + '</b><span>sites vigiados</span></div>' +
-          '<div class="kpi"><b>' + last7 + '</b><span>novidades em 7 dias</span></div>' +
-          '<div class="kpi"><b>' + (updated || '—') + '</b><span>última varredura</span></div>' +
-        '</div>' +
-        '<div class="toolbar section" style="margin-top:20px">' +
-          '<div class="filter-input">' + icon('search') + '<input class="input" id="rq" type="search" placeholder="Filtrar: PM, TJ, agente, Minas…" value="' + esc(ui.q) + '"></div>' +
-          '<button class="chip' + (ui.mine ? ' sel' : '') + '" id="rmine">' + icon('star') + 'Só dos meus links salvos</button>' +
-        '</div>' +
-        '<div class="subs" id="rufs" style="margin-bottom:14px"><button class="chip' + (!ui.uf ? ' sel' : '') + '" data-uf="">Todos</button>' +
-          (myUf ? '<button class="chip' + (ui.uf === myUf ? ' sel' : '') + '" data-uf="' + myUf + '">' + icon('flag') + 'Meu estado (' + myUf + ')</button>' : '') +
-          '<button class="chip' + (ui.uf === 'BR' ? ' sel' : '') + '" data-uf="BR">Federais</button>' +
-          ufs.filter((u) => u !== myUf).map((u) => '<button class="chip' + (ui.uf === u ? ' sel' : '') + '" data-uf="' + u + '">' + u + '</button>').join('') +
-        '</div>' +
-        '<section class="panel panel-pad open-search section" id="open-search"><div class="finder-head"><span class="tile-icon">' + icon('search') + '</span><div class="grow"><h3>Procurar inscrições abertas em todos os sites</h3>' +
-          '<p class="muted small">Escolha onde procurar. O Atlas monta pesquisas nos sites oficiais por "inscrições abertas", "edital de abertura" e "concurso público".</p></div></div>' +
-          '<div class="toolbar" style="margin:0">' +
-            '<select class="select" id="os-scope" style="width:auto">' +
-              (myUf ? '<option value="uf:' + myUf + '">Meu estado (' + myUf + ')</option>' : '') +
-              '<option value="todos">Todos os sites do catálogo</option><option value="federal">Órgãos federais</option><option value="seguranca">Segurança (PF, PRF, PMs, PCs, Bombeiros)</option>' +
-              '<option value="justica">Tribunais, MP e Defensorias</option><option value="bancas">Bancas organizadoras</option><option value="estatais">Bancos e estatais</option>' +
-              DATA.estados.filter((e) => e.uf !== myUf).map((e) => '<option value="uf:' + e.uf + '">' + esc(e.nome) + '</option>').join('') + '</select>' +
-            '<label class="chip" style="cursor:pointer"><input type="checkbox" id="os-recent"' + (ui.recent ? ' checked' : '') + ' style="margin:0 4px 0 0">Só do último mês</label>' +
-            '<button class="btn btn-primary" id="os-go">' + icon('search') + 'Pesquisar vagas abertas</button>' +
-          '</div><div id="os-out" class="os-out"></div></section>' +
-        '<div class="subs" style="margin:18px 0 12px"><button class="chip' + (ui.abertura ? ' sel' : '') + '" id="rab">' + icon('calendar') + 'Só aberturas de inscrição</button></div>' +
-        '<div id="rfeed"></div>' +
-        '<p class="muted small" style="margin-top:16px">' + icon('info', 'i-inline') + ' O Radar lê só a página principal de cada site e alguns órgãos bloqueiam robôs, por isso ele complementa (não substitui) a leitura do Diário Oficial. Sempre confirme no edital.</p>',
-      after(view) {
-        const draw = () => {
-          const q = A.norm(ui.q);
-          const favs = Store.state.favs;
-          const list = items.filter((x) =>
-            (!ui.uf || (ui.uf === 'BR' ? !x.uf : x.uf === ui.uf)) &&
-            (!ui.mine || favs[x.site]) &&
-            (!ui.abertura || ABERTURA.test(x.t)) &&
-            (!q || q.split(/\s+/).every((t) => A.norm(x.n + ' ' + x.t + ' ' + x.uf).includes(t))));
-          if (!list.length) {
-            $('#rfeed', view).innerHTML = items.length
-              ? A.emptyBox('radar', 'Nada com esses filtros', 'Tente outro estado ou desmarque "Só dos meus links".')
-              : A.emptyBox('radar', 'O Radar está ligando os motores', 'A primeira varredura memoriza o que já existe em cada site. A partir da segunda, todo link novo de edital aparece aqui.');
-            return;
-          }
-          let html = '', day = '';
-          list.slice(0, 200).forEach((x) => {
-            if (x.d !== day) { if (day) html += '</div>'; day = x.d; html += '<div class="p-group" style="padding-left:2px">' + when(x.d) + '</div><div class="list">'; }
-            const bs = bancasIn(x.t);
-            html += '<div class="row">' + A.mono(x.n, x.site) +
-              '<div class="grow"><div class="title" style="white-space:normal">' + esc(x.t) + '</div><div class="sub">' + esc(x.n) + ' · ' + esc(A.hostOf(x.u)) + '</div>' +
-              (bs.length ? '<div class="subs" style="margin-top:6px">' + bs.map((b) => '<a class="chip find-chip" href="' + esc(bancaLinks(b, x.n.replace(/ — [A-Z]{2}$/, '')).chamada) + '" target="_blank" rel="noopener">' + icon('clipboard') + 'Abrir na banca (' + esc(b.n) + ')</a>').join('') + '</div>' : '') + '</div>' +
-              A.extLink(x.u, 'btn btn-sm btn-primary', 'Abrir') +
-              '<button class="icon-btn fav' + (A.isFav(x.site) ? ' on' : '') + '" data-action="fav" data-url="' + esc(x.site) + '" title="Salvar o site do órgão" aria-label="Salvar">' + icon('star') + '</button></div>';
-          });
-          $('#rfeed', view).innerHTML = html + '</div>';
-        };
-        draw();
-        $('#rq', view).addEventListener('input', (e) => { ui.q = e.target.value; draw(); });
-        $('#rmine', view).addEventListener('click', (e) => { ui.mine = !ui.mine; e.currentTarget.classList.toggle('sel', ui.mine); draw(); });
-        $('#rab', view).addEventListener('click', (e) => { ui.abertura = !ui.abertura; e.currentTarget.classList.toggle('sel', ui.abertura); draw(); });
-        const scopeSel = $('#os-scope', view);
-        if (ui.scope) scopeSel.value = ui.scope;
-        const runSearch = () => {
-          ui.scope = scopeSel.value; ui.recent = $('#os-recent', view).checked;
-          const groups = scopeGroups(ui.scope);
-          const total = groups.reduce((n, g) => n + g.list.length, 0);
-          const out = $('#os-out', view);
-          out.innerHTML = '<p class="muted small">' + total + ' sites oficiais em ' + groups.reduce((n, g) => n + searchParts(g.list).length, 0) + ' pesquisas. Toque em cada parte para abrir.</p>' +
-            (() => {
-              const rowOf = (g) => {
-                const parts = searchParts(g.list, ui.recent);
-                return '<div class="row os-row"><div class="grow"><div class="title">' + esc(g.nome) + '</div><div class="sub">' + g.list.length + ' sites</div></div><div class="os-parts">' +
-                  parts.map((p, i) => '<a class="btn btn-sm' + (i === 0 ? ' btn-primary' : '') + '" href="' + esc(p.url) + '" target="_blank" rel="noopener" title="' + esc(p.sites.join(', ')) + '">' + (parts.length > 1 ? 'Parte ' + (i + 1) : 'Pesquisar') + ' ' + icon('external') + '</a>').join('') +
-                  '</div></div>';
-              };
-              if (ui.scope !== 'todos') return groups.map(rowOf).join('');
-              // "Todos": bancas e federais à vista; os 27 estados recolhidos para não poluir a tela.
-              return groups.slice(0, 2).map(rowOf).join('') +
-                '<details class="os-states"><summary class="row os-row"><div class="grow"><div class="title">Estados</div><div class="sub">27 estados e o DF · toque para ver</div></div>' + icon('chevron') + '</summary>' +
-                '<div class="os-out">' + groups.slice(2).map(rowOf).join('') + '</div></details>';
-            })();
-          A.hydrateIcons(out);
-        };
-        $('#os-go', view).addEventListener('click', runSearch);
-        scopeSel.addEventListener('change', runSearch);
-        $('#os-recent', view).addEventListener('change', runSearch);
-        $('#rufs', view).addEventListener('click', (e) => {
-          const b = e.target.closest('[data-uf]'); if (!b) return;
-          ui.uf = b.dataset.uf;
-          $$('[data-uf]', view).forEach((x) => x.classList.toggle('sel', x === b));
-          draw();
-        });
-      }
-    };
-  });
-
-  // Destaque do Radar na página inicial.
-  A.afterRender.push((view, cur) => {
-    if (cur.name !== 'home') return;
-    const widgets = $('.widgets', view);
-    if (!widgets) return;
-    const my = Store.state.profile.uf;
-    const top = items.filter((x) => !my || !x.uf || x.uf === my).slice(0, 5);
-    const html = '<section class="section"><div class="section-head"><h2>' + icon('radar') + 'Radar de Editais' + (last7 ? ' <span class="badge accent">' + last7 + ' novidades</span>' : '') + '</h2><a class="link-more" href="#/radar">Ver tudo ' + icon('chevron') + '</a></div>' +
-      (top.length
-        ? '<div class="list">' + top.map((x) => '<div class="row">' + A.mono(x.n, x.site) + '<div class="grow"><div class="title">' + esc(x.t) + '</div><div class="sub">' + esc(x.n) + ' · ' + when(x.d) + '</div></div>' + A.extLink(x.u, 'icon-btn', icon('external')) + '</div>').join('') + '</div>'
-        : '<div class="panel panel-pad"><p class="muted">Todo dia o Atlas vigia os sites oficiais e mostra aqui os editais novos. <a class="grad-text" href="#/radar">Saiba como funciona →</a></p></div>') +
-      '</section>';
-    widgets.insertAdjacentHTML('afterend', html);
   });
 
   /* =========================================================

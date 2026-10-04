@@ -168,7 +168,7 @@
     agenda.itens.forEach((x, i) => {
       const nome = 'Agenda "' + (x.orgao || i + 1) + '"';
       if (!x.orgao) e.push('Agenda ' + (i + 1) + ': falta o órgão');
-      chk(x.edital, nome + ' (edital)'); chk(x.site, nome + ' (site)'); chk(x.linkBanca, nome + ' (página na banca)');
+      chk(x.edital, nome + ' (edital)'); chk(x.site, nome + ' (site)'); chk(x.linkBanca, nome + ' (página na banca)'); chk(x.areaCandidato, nome + ' (área do candidato)');
       if (!x.inscFim && !x.prova) e.push(nome + ': informe o fim das inscrições ou a data da prova');
       if (x.inscInicio && x.inscFim && x.inscInicio > x.inscFim) e.push(nome + ': o início das inscrições está depois do fim');
     });
@@ -200,7 +200,7 @@
             '<li>Abra <a class="grad-text" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a>.</li>' +
             '<li>Nome: <code>Painel Atlas</code>. Validade: <b>90 dias</b>.</li>' +
             '<li>Repository access: <b>Only select repositories</b> → escolha este repositório.</li>' +
-            '<li>Permissions → Repository → <b>Contents: Read and write</b>. Nada mais.</li>' +
+            '<li>Permissions → Repository → <b>Contents: Read and write</b> e <b>Actions: Read and write</b> (para o botão "Atualizar o Radar"). Nada mais.</li>' +
             '<li>Gere, copie e cole aqui. Não envie o token para ninguém.</li>' +
           '</ol></details>' +
         '<p class="adm-help">O token fica só nesta aba do navegador e some ao fechá-la. Ative a verificação em duas etapas (2FA) na sua conta do GitHub.</p>' +
@@ -330,7 +330,7 @@
   }
 
   /* ---------- Abas ---------- */
-  const TABS = [['geral', 'Visão geral'], ['agenda', 'Agenda'], ['pix', 'Pix e contato'], ['patrocinios', 'Patrocínios'], ['recomendados', 'Afiliados e dicas'], ['pacotes', 'Preços (Anuncie)'], ['anuncios', 'AdSense e Pro'], ['avancado', 'Avançado']];
+  const TABS = [['geral', 'Visão geral'], ['agenda', 'Concursos abertos'], ['pix', 'Pix e contato'], ['patrocinios', 'Patrocínios'], ['recomendados', 'Afiliados e dicas'], ['pacotes', 'Preços (Anuncie)'], ['anuncios', 'AdSense e Pro'], ['avancado', 'Avançado']];
 
   function viewGeral() {
     const ativos = cfg.patrocinios.filter((p) => !p.ate || p.ate >= today());
@@ -349,6 +349,10 @@
         '<div class="kpi"><b>' + agenda.itens.filter((x) => x.inscFim && x.inscFim >= today()).length + '</b><span>inscrições abertas na agenda</span></div>' +
       '</div>' +
       (vencendo.length ? '<div class="panel panel-pad section"><b>Renove com o cliente:</b> ' + vencendo.map((p) => esc(p.titulo) + ' (até ' + esc(p.ate) + ')').join(', ') + '</div>' : '') +
+      '<section class="section panel panel-pad adm-section"><div class="section-head" style="margin:0"><h2 style="font-size:17px">Radar de Editais</h2>' +
+        '<button class="btn btn-primary btn-sm" id="adm-radar">Atualizar o Radar agora</button></div>' +
+        '<p class="adm-help">O robô visita os sites oficiais todo dia às 7h. Use o botão para rodar agora: em cerca de 5 minutos as inscrições abertas encontradas aparecem no site.' +
+        (RADAR.updatedAt ? ' Última varredura: <b>' + esc(new Date(RADAR.updatedAt).toLocaleString('pt-BR')) + '</b> · ' + (RADAR.abertas || []).length + ' inscrições abertas encontradas.' : ' Ainda não houve varredura.') + '</p></section>' +
       '<section class="section"><div class="section-head"><h2>Checklist para começar a faturar</h2></div><div class="list">' +
         check(agenda.itens.length >= 5, 'Agenda de Inscrições com pelo menos 5 concursos (ela traz visitas todo dia)', 'agenda') +
         check(cfg.pix.chave && cfg.pix.nome && cfg.pix.cidade, 'Pix configurado — página <b>Apoie o Atlas</b> no ar', 'pix') +
@@ -424,10 +428,11 @@
     { k: 'prova', label: 'Data da prova', type: 'date' },
     { k: 'edital', label: 'Link do edital', type: 'url', ph: 'https://' },
     { k: 'site', label: 'Site oficial do concurso', type: 'url', ph: 'https://' },
+    { k: 'areaCandidato', label: 'Área do candidato (login da inscrição)', type: 'url', ph: 'https://', help: 'Onde o candidato faz login, gera boleto e imprime o cartão de confirmação.' },
     { k: 'linkBanca', label: 'Página do concurso na banca (convocações)', type: 'url', ph: 'https://', help: 'Onde a banca chama os candidatos. Vazio = o site procura sozinho no site da banca.' },
     { k: 'obs', label: 'Observação (opcional)', type: 'textarea', full: true }
   ];
-  const BLANK_AGENDA = { id: '', orgao: '', cargo: '', uf: '', area: 'seguranca', banca: '', vagas: '', salario: '', inscInicio: '', inscFim: '', prova: '', edital: '', site: '', linkBanca: '', obs: '' };
+  const BLANK_AGENDA = { id: '', orgao: '', cargo: '', uf: '', area: 'seguranca', banca: '', vagas: '', salario: '', inscInicio: '', inscFim: '', prova: '', edital: '', site: '', areaCandidato: '', linkBanca: '', obs: '' };
   function agendaStatus(x) {
     const t = today();
     if (x.inscInicio && x.inscInicio > t) return '<span class="badge accent">abre ' + esc(x.inscInicio) + '</span>';
@@ -438,7 +443,7 @@
   function viewAgenda() {
     const known = new Set(agenda.itens.map((x) => x.edital));
     const sug = (RADAR.items || []).filter((x) => !known.has(x.u)).slice(0, 8);
-    return '<p class="adm-help">Cadastre os concursos com as datas do edital oficial. O site mostra sozinho o que está aberto, o que abre em breve, as provas próximas e o que encerrou. Os itens mais novos ficam no topo.</p>' +
+    return '<p class="adm-help">Cadastre os concursos com as datas do edital oficial. No Radar de Editais aparecem <b>só os que estão com inscrição aberta hoje</b>; quando a inscrição encerra, o concurso some sozinho do site. Os itens mais novos ficam no topo.</p>' +
       (sug.length ? '<section class="panel panel-pad adm-section"><h2 style="font-size:16px">Sugestões do Radar de Editais</h2><p class="adm-help">Links novos encontrados nos sites oficiais. Confira o edital e cadastre com um clique.</p><div class="list">' +
         sug.map((x, i) => '<div class="row"><div class="grow"><div class="title" style="white-space:normal">' + esc(x.t) + '</div><div class="sub">' + esc(x.n) + ' · ' + esc(x.d) + '</div></div>' +
           '<a class="icon-btn" href="' + esc(x.u) + '" target="_blank" rel="noopener" title="Abrir">↗</a><button class="btn btn-sm" data-sug="' + i + '">Cadastrar</button></div>').join('') + '</div></section>' : '') +
@@ -500,6 +505,19 @@
       '<div id="adm-view">' + views[tab]() + '</div>';
     $$('[data-tab]', root).forEach((b) => b.addEventListener('click', () => { tab = b.dataset.tab; renderApp(); }));
     $$('[data-go]', root).forEach((b) => b.addEventListener('click', () => { tab = b.dataset.go; renderApp(); }));
+    const rb = $('#adm-radar', root);
+    if (rb) rb.addEventListener('click', async () => {
+      if (session.demo) { toast('Modo demonstração: no site oficial, este botão inicia a varredura.'); return; }
+      rb.disabled = true; rb.textContent = 'Iniciando…';
+      try {
+        await gh('/repos/' + session.owner + '/' + session.repo + '/actions/workflows/radar.yml/dispatches', { method: 'POST', body: { ref: session.branch } });
+        toast('Varredura iniciada! Em cerca de 5 minutos o site é atualizado.');
+        rb.textContent = 'Varredura em andamento';
+      } catch (e) {
+        rb.disabled = false; rb.textContent = 'Atualizar o Radar agora';
+        alert(e.status === 403 || e.status === 404 ? 'O token não tem permissão para iniciar automações. Crie um token com "Actions: Read and write" além de "Contents: Read and write".' : 'Não foi possível iniciar: ' + e.message);
+      }
+    });
     bindPaths(root);
     bindList(root, 'patrocinios', { titulo: '', url: '', desc: '', valor: 99, ate: '', onde: ['home'] });
     bindList(root, 'recomendados', { titulo: '', url: '', preco: '', tag: '', desc: '' });

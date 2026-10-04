@@ -250,6 +250,7 @@
       });
       if (it.cat !== 'estado') score += 1;
       score += Math.min(3, (Store.state.visits[it.u] || 0) * 0.3);
+      score += it.uf === 'SP' ? 2 : it.uf === 'RJ' ? 1.6 : it.uf === 'MG' ? 1 : 0;   // estados com mais procura primeiro
       res.push({ it, score });
     }
     res.sort((a, b) => b.score - a.score || a.it.n.localeCompare(b.it.n));
@@ -476,7 +477,7 @@
   ];
 
   const POPULAR = [
-    'https://www.in.gov.br', 'https://www.gov.br/gestao/pt-br/concursonacional', 'https://www.cebraspe.org.br',
+    'https://www.policiamilitar.sp.gov.br', 'https://www.pmerj.rj.gov.br', 'https://www.in.gov.br', 'https://www.gov.br/gestao/pt-br/concursonacional', 'https://www.cebraspe.org.br',
     'https://conhecimento.fgv.br/concursos', 'https://www.gov.br/pf/pt-br', 'https://www.gov.br/prf/pt-br',
     'https://www.pciconcursos.com.br', 'https://www.planalto.gov.br/ccivil_03/constituicao/constituicao.htm'
   ];
@@ -538,7 +539,7 @@
           '<span class="eyebrow">' + icon('sparkle') + (nome ? 'Olá, ' + esc(nome) + '!' : 'Gratuito para todo concurseiro') + '</span>' +
           '<h1>Todos os sites de <span class="grad-text">concursos públicos</span> do Brasil em um só lugar.</h1>' +
           '<p class="lead">Bancas, diários oficiais, polícias, tribunais e órgãos dos 27 estados — organizados, pesquisáveis e com ferramentas de estudo grátis.</p>' +
-          '<div class="hero-search" data-action="palette" role="button" tabindex="0">' + icon('search') + '<span class="ph">Busque: "PM Minas", "diário oficial SP", "Cebraspe", "Lei 8.112"…</span><kbd>Ctrl K</kbd>' +
+          '<div class="hero-search" data-action="palette" role="button" tabindex="0">' + icon('search') + '<span class="ph">Busque: "PM São Paulo", "PM Rio de Janeiro", "TJ SP", "Cebraspe"…</span><kbd>Ctrl K</kbd>' +
             '<span class="btn btn-primary">Buscar</span></div>' +
           '<div class="hero-stats">' +
             '<div class="stat"><b>' + totalSites + '+</b><span>sites oficiais</span></div>' +
@@ -639,6 +640,8 @@
       html:
         '<div class="page-head"><div><span class="eyebrow">' + icon('map') + '27 hubs estaduais</span><h1>Concursos por estado</h1>' +
         '<p>Cada estado reúne seus "subsites": Polícia Militar, Polícia Civil, Bombeiros, Tribunal de Justiça, MP, Defensoria, TRE, TRT, Sefaz, Tribunal de Contas, Assembleia e o Diário Oficial onde os editais são publicados.</p></div></div>' +
+        '<div class="region"><h3>Mais procurados</h3><div class="uf-grid">' + ['SP', 'RJ', 'MG', 'BA', 'PR', 'RS'].map((uf) => ufBy[uf]).map((e) =>
+          '<a class="uf' + (e.uf === mine ? ' mine' : '') + '" href="#/uf/' + e.uf + '"><b>' + e.uf + '</b><span>' + esc(e.nome) + '</span><small>' + (Object.keys(e.items).length + e.trtItems.length + 1) + ' órgãos</small></a>').join('') + '</div></div>' +
         regions.map((r) => '<div class="region"><h3>' + r + '</h3><div class="uf-grid">' +
           DATA.estados.filter((e) => e.regiao === r).map((e) =>
             '<a class="uf' + (e.uf === mine ? ' mine' : '') + '" href="#/uf/' + e.uf + '"><b>' + e.uf + '</b><span>' + esc(e.nome) + '</span><small>' + (Object.keys(e.items).length + e.trtItems.length + 1) + ' órgãos</small></a>').join('') +
@@ -937,6 +940,9 @@
       let res = [];
       if (!q) {
         res = res.concat(s.recent.slice(0, 5).map((r) => ({ group: 'Recentes', n: r.n, sub: hostOf(r.u), u: r.u })));
+        const TOP = [['SP', 'pm'], ['RJ', 'pm'], ['SP', 'pc'], ['RJ', 'pc'], ['SP', 'tj'], ['RJ', 'tj'], ['SP', 'cbm'], ['RJ', 'cbm'], ['SP', 'doe'], ['RJ', 'doe']];
+        res = res.concat(TOP.map(([uf, k]) => ufBy[uf] && ufBy[uf].items[k]).filter(Boolean)
+          .map((it) => ({ group: 'Mais procurados', n: it.n, sub: it.ufNome + ' · ' + hostOf(it.u), u: it.u })));
         res = res.concat(basePages().slice(0, 5).concat(pages).map((p) => ({ group: 'Ir para', n: p.n, sub: p.sub || '', href: p.href, ic: p.ic })));
       } else {
         const nq = norm(q);

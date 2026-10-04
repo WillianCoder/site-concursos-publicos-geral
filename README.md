@@ -11,10 +11,10 @@ O Atlas Concursos reúne os endereços oficiais que todo concurseiro precisa: ba
 | **Busca global** (`Ctrl K` ou `/`) | Busca instantânea em mais de 430 sites oficiais e nas páginas do próprio Atlas. Entende siglas: "pm mg", "tj rj", "prf", "cnu", "lei 8112". |
 | **Categorias** | Órgãos federais, bancas, diários oficiais, segurança e Forças Armadas, tribunais/MP/Defensoria, fiscal e controle, legislativo, bancos e estatais, lei seca, estudo gratuito, notícias e documentos do candidato. |
 | **Hubs dos 27 estados** | Cada estado reúne seus "subsites": PM, Polícia Civil, Bombeiros, TJ, MP, Defensoria, TRE, TRT, TRF, Sefaz, TCE, Assembleia, Governo e Diário Oficial. Cada órgão tem atalho para "Editais no Diário Oficial" e para buscar "concurso/edital" dentro do próprio site. |
-| **Radar de Editais** ⭐ | Exclusivo: todo dia um robô gratuito (GitHub Actions) visita os sites oficiais e mostra os **links novos** de edital, concurso, convocação e gabarito. Os cards dos órgãos com novidade ganham um selo. Inclui **"Procurar inscrições abertas em todos os sites"** (por estado, área ou todos, em pesquisas de até 8 sites) e o filtro "Só aberturas de inscrição". |
+| **Radar de Editais** ⭐ | A página dos **concursos com inscrição aberta hoje**: os conferidos pela equipe (cadastrados no painel) e os que o robô diário encontra nos sites oficiais com "inscrições abertas" ou "edital de abertura". Inscrição encerrada, resultado e gabarito não aparecem. Inclui a busca **"Procurar inscrições abertas nos sites oficiais"**, organizada por tipo de órgão (Polícias Militares, Polícias Civis, Bombeiros, TJs…) com botões por estado, começando por SP, RJ e MG. |
 | **Bancas ligadas ao concurso** ⭐ | Cada banca tem atalhos para *Inscrições abertas* e *Convocações e resultados*. Na Agenda, em "Meu nome no Diário" e no Radar, o botão **"Na banca"** abre a página onde a banca chama o candidato (link cadastrado no painel ou pesquisa no site da banca). |
 | **Meu nome no Diário Oficial** ⭐ | Busca avançada: o candidato informa nome, RG, nº de inscrição e estado, e o Atlas monta as buscas certas no Diário Oficial do estado, no site do órgão (ex.: PM), nas bancas, no DOU e nas prefeituras — com o RG em vários formatos e o CPF mascarado como os diários publicam (o CPF completo nunca é usado). Atalho "Procurar meu nome nos editais" em cada órgão estadual. |
-| **Agenda de Inscrições** ⭐ | Inscrições abertas, que abrem em breve, provas chegando e encerradas, com filtros por estado e área, contagem regressiva e botão para acompanhar. Alimentada pelo painel (com sugestões do Radar). |
+| **Edital e Área do candidato** | Cada órgão tem atalhos para o edital e para a área do candidato (login da inscrição). Se houver concurso aberto cadastrado, os links vão direto para ele. |
 | **Descubra seu concurso** ⭐ | Teste de 4 perguntas que indica as carreiras ideais e os sites oficiais certos (inclusive do estado escolhido), com botão para salvar tudo e compartilhar. |
 | **Meus links** | Salve qualquer site com a ★, crie links próprios (ex.: a prefeitura da sua cidade), organize em pastas e escreva anotações. |
 | **Meus concursos** | Agenda de inscrições e provas com contagem regressiva e arquivo `.ics` para colocar no calendário do celular. |
@@ -59,16 +59,16 @@ Mais: tema escuro e claro, layout para celular com barra inferior, funciona offl
 
 Edite a **Agenda de Inscrições**, **Pix, contato, patrocínios, links de afiliado, dicas patrocinadas, preços, AdSense e Firebase** pelo navegador — no computador ou no celular — sem mexer em código.
 
-1. Crie um token em <https://github.com/settings/personal-access-tokens/new>: *Only select repositories* → este repositório; *Permissions → Contents: Read and write*; validade de 90 dias.
+1. Crie um token em <https://github.com/settings/personal-access-tokens/new>: *Only select repositories* → este repositório; *Permissions → Contents: Read and write* e *Actions: Read and write* (para o botão "Atualizar o Radar agora"); validade de 90 dias.
 2. Abra `https://SEU-SITE/admin.html`, cole o token e entre.
-3. Edite e clique em **Salvar e publicar**: o painel grava `assets/js/config.js` e `data/agenda.js` no GitHub e o site atualiza em ~1 minuto. Na aba *Agenda*, as novidades do Radar aparecem como sugestões para cadastrar com um clique.
+3. Edite e clique em **Salvar e publicar**: o painel grava `assets/js/config.js` e `data/agenda.js` no GitHub e o site atualiza em ~1 minuto. Na aba *Concursos abertos*, as novidades do Radar aparecem como sugestões para cadastrar com um clique; só aparecem no site os concursos com inscrição aberta hoje. Na *Visão geral*, o botão **Atualizar o Radar agora** roda a varredura na hora.
 
 O token fica só na aba do navegador (some ao fechar), a página não é indexada pelo Google e nunca entra no cache offline. A aba *Visão geral* mostra a receita mensal dos patrocínios ativos, quem vence em 7 dias e um checklist para começar a faturar.
 
 ## Radar de Editais
 
 - `scripts/radar.mjs` + `.github/workflows/radar.yml` rodam todo dia às 07:23 (Brasília).
-- A primeira execução só memoriza o que já existe; a partir da segunda, cada link novo vira um item em `data/radar.js` (mantém 30 dias).
+- Cada execução guarda em `data/radar.js` as **inscrições abertas** encontradas hoje em cada site (já na primeira varredura) e os **editais novos** desde a anterior (mantém 30 dias). Links com encerrada, resultado, gabarito ou convocação são descartados.
 - Quando o Radar encontra novidades, o site é republicado automaticamente.
 - Para rodar na hora: *Actions → Radar de Editais → Run workflow*.
 
@@ -137,8 +137,9 @@ assets/js/tools.js      ferramentas de estudo
 assets/js/monetize.js   Pix, página de anúncios, patrocínios e afiliados
 assets/js/features.js   Radar de Editais e Descubra seu concurso
 assets/js/finder.js     Meu nome no Diário Oficial
-assets/js/agenda.js     Agenda de Inscrições
-data/agenda.js          concursos da agenda (editado pelo painel)
+assets/js/agenda.js     concursos abertos conferidos (dados do painel)
+assets/js/radar.js      página Radar de Editais
+data/agenda.js          concursos abertos (editado pelo painel)
 assets/js/admin.js      Painel do Administrador (admin.html)
 data/radar.js           novidades do Radar (gerado automaticamente)
 scripts/radar.mjs       robô do Radar de Editais
