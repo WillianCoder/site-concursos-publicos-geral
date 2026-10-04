@@ -12,6 +12,8 @@ O Atlas Concursos reúne os endereços oficiais que todo concurseiro precisa: ba
 | **Categorias** | Órgãos federais, bancas, diários oficiais, segurança e Forças Armadas, tribunais/MP/Defensoria, fiscal e controle, legislativo, bancos e estatais, lei seca, estudo gratuito, notícias e documentos do candidato. |
 | **Hubs dos 27 estados** | Cada estado reúne seus "subsites": PM, Polícia Civil, Bombeiros, TJ, MP, Defensoria, TRE, TRT, TRF, Sefaz, TCE, Assembleia, Governo e Diário Oficial. Cada órgão tem atalho para "Editais no Diário Oficial" e para buscar "concurso/edital" dentro do próprio site. |
 | **Radar de Editais** ⭐ | Exclusivo: todo dia um robô gratuito (GitHub Actions) visita os sites oficiais e mostra os **links novos** de edital, concurso, convocação e gabarito. Os cards dos órgãos com novidade ganham um selo. |
+| **Meu nome no Diário Oficial** ⭐ | Busca avançada: o candidato informa nome, RG, nº de inscrição e estado, e o Atlas monta as buscas certas no Diário Oficial do estado, no site do órgão (ex.: PM), nas bancas, no DOU e nas prefeituras — com o RG em vários formatos e o CPF mascarado como os diários publicam (o CPF completo nunca é usado). Atalho "Procurar meu nome nos editais" em cada órgão estadual. |
+| **Agenda de Inscrições** ⭐ | Inscrições abertas, que abrem em breve, provas chegando e encerradas, com filtros por estado e área, contagem regressiva e botão para acompanhar. Alimentada pelo painel (com sugestões do Radar). |
 | **Descubra seu concurso** ⭐ | Teste de 4 perguntas que indica as carreiras ideais e os sites oficiais certos (inclusive do estado escolhido), com botão para salvar tudo e compartilhar. |
 | **Meus links** | Salve qualquer site com a ★, crie links próprios (ex.: a prefeitura da sua cidade), organize em pastas e escreva anotações. |
 | **Meus concursos** | Agenda de inscrições e provas com contagem regressiva e arquivo `.ics` para colocar no calendário do celular. |
@@ -54,11 +56,11 @@ Mais: tema escuro e claro, layout para celular com barra inferior, funciona offl
 
 ## Painel do Administrador (`/admin.html`)
 
-Edite **Pix, contato, patrocínios, links de afiliado, dicas patrocinadas, preços, AdSense e Firebase** pelo navegador — no computador ou no celular — sem mexer em código.
+Edite a **Agenda de Inscrições**, **Pix, contato, patrocínios, links de afiliado, dicas patrocinadas, preços, AdSense e Firebase** pelo navegador — no computador ou no celular — sem mexer em código.
 
 1. Crie um token em <https://github.com/settings/personal-access-tokens/new>: *Only select repositories* → este repositório; *Permissions → Contents: Read and write*; validade de 90 dias.
 2. Abra `https://SEU-SITE/admin.html`, cole o token e entre.
-3. Edite e clique em **Salvar e publicar**: o painel grava `assets/js/config.js` no GitHub e o site atualiza em ~1 minuto.
+3. Edite e clique em **Salvar e publicar**: o painel grava `assets/js/config.js` e `data/agenda.js` no GitHub e o site atualiza em ~1 minuto. Na aba *Agenda*, as novidades do Radar aparecem como sugestões para cadastrar com um clique.
 
 O token fica só na aba do navegador (some ao fechar), a página não é indexada pelo Google e nunca entra no cache offline. A aba *Visão geral* mostra a receita mensal dos patrocínios ativos, quem vence em 7 dias e um checklist para começar a faturar.
 
@@ -133,6 +135,9 @@ assets/js/app.js        núcleo: conta, rotas, busca, catálogo, estados, links,
 assets/js/tools.js      ferramentas de estudo
 assets/js/monetize.js   Pix, página de anúncios, patrocínios e afiliados
 assets/js/features.js   Radar de Editais e Descubra seu concurso
+assets/js/finder.js     Meu nome no Diário Oficial
+assets/js/agenda.js     Agenda de Inscrições
+data/agenda.js          concursos da agenda (editado pelo painel)
 assets/js/admin.js      Painel do Administrador (admin.html)
 data/radar.js           novidades do Radar (gerado automaticamente)
 scripts/radar.mjs       robô do Radar de Editais

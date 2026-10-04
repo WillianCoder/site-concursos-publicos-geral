@@ -11,6 +11,7 @@
 
   const API = 'https://api.github.com';
   const PATH = 'assets/js/config.js';
+  const AGENDA_PATH = 'data/agenda.js';
   const SS = 'atlas:admin';
   const LOCAL = window.ATLAS_CONFIG || {};
   const DATA = window.ATLAS_DATA || { categorias: [], estados: [] };
@@ -36,12 +37,14 @@
   let session = null;
   try { session = JSON.parse(sessionStorage.getItem(SS) || 'null'); } catch (e) {}
   let cfg = null, sha = null, dirty = false, tab = 'geral';
+  let agenda = { atualizadoEm: '', itens: [] }, agendaSha = null, dirtyAgenda = false;
 
-  function setDirty(v) {
-    dirty = v;
-    $('#adm-dirty').hidden = !v;
+  // which: 'config' (padrão) ou 'agenda' — cada arquivo é publicado separadamente.
+  function setDirty(v, which) {
+    if (which === 'agenda') dirtyAgenda = v; else if (which === 'all') { dirty = v; dirtyAgenda = v; } else dirty = v;
+    $('#adm-dirty').hidden = !(dirty || dirtyAgenda);
   }
-  window.addEventListener('beforeunload', (e) => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+  window.addEventListener('beforeunload', (e) => { if (dirty || dirtyAgenda) { e.preventDefault(); e.returnValue = ''; } });
 
   async function gh(path, opts) {
     opts = opts || {};
@@ -62,8 +65,8 @@
     return data;
   }
 
-  function parseConfig(text) {
-    const start = text.indexOf('{', text.indexOf('window.ATLAS_CONFIG'));
+  function parseConfig(text, name) {
+    const start = text.indexOf('{', text.indexOf(name || 'window.ATLAS_CONFIG'));
     const end = text.lastIndexOf('}');
     if (start < 0 || end < start) throw new Error('formato');
     return JSON.parse(text.slice(start, end + 1));
@@ -82,7 +85,23 @@
     return c;
   }
 
+  function serializeAgenda(a) {
+    return '/* Agenda de Inscrições do Atlas Concursos — editada pelo Painel do Administrador (aba "Agenda").\n   O conteúdo entre as chaves precisa ser JSON válido. */\nwindow.ATLAS_AGENDA = ' + JSON.stringify(a, null, 1) + ';\n';
+  }
+  async function loadAgenda() {
+    try {
+      const f = await gh('/repos/' + session.owner + '/' + session.repo + '/contents/' + AGENDA_PATH + '?ref=' + encodeURIComponent(session.branch));
+      agendaSha = f.sha;
+      agenda = parseConfig(b64decode(f.content), 'window.ATLAS_AGENDA');
+    } catch (e) {
+      if (e.status !== 404) throw e;
+      agendaSha = null; agenda = { atualizadoEm: '', itens: [] };
+    }
+    if (!Array.isArray(agenda.itens)) agenda.itens = [];
+  }
+
   async function loadRemote() {
+    await loadAgenda();
     const f = await gh('/repos/' + session.owner + '/' + session.repo + '/contents/' + PATH + '?ref=' + encodeURIComponent(session.branch));
     sha = f.sha;
     try { cfg = normalize(parseConfig(b64decode(f.content))); }
@@ -99,12 +118,22 @@
     const btn = $('#adm-save');
     btn.disabled = true; btn.textContent = 'Publicando…';
     try {
-      const r = await gh('/repos/' + session.owner + '/' + session.repo + '/contents/' + PATH, {
-        method: 'PUT',
-        body: { message: 'Painel: atualiza as configurações do site', content: b64encode(serialize(cfg)), sha, branch: session.branch }
-      });
-      sha = r.content.sha;
-      setDirty(false);
+      if (dirty) {
+        const r = await gh('/repos/' + session.owner + '/' + session.repo + '/contents/' + PATH, {
+          method: 'PUT',
+          body: { message: 'Painel: atualiza as configurações do site', content: b64encode(serialize(cfg)), sha, branch: session.branch }
+        });
+        sha = r.content.sha;
+        setDirty(false);
+      }
+      if (dirtyAgenda) {
+        agenda.atualizadoEm = today();
+        const body = { message: 'Painel: atualiza a Agenda de Inscrições', content: b64encode(serializeAgenda(agenda)), branch: session.branch };
+        if (agendaSha) body.sha = agendaSha;
+        const r = await gh('/repos/' + session.owner + '/' + session.repo + '/contents/' + AGENDA_PATH, { method: 'PUT', body });
+        agendaSha = r.content.sha;
+        setDirty(false, 'agenda');
+      }
       toast('Publicado! O site atualiza em cerca de 1 minuto.');
     } catch (e) {
       if (e.status === 409) alert('O arquivo foi alterado em outro lugar. Recarregue o painel e refaça a alteração.');
@@ -122,6 +151,13 @@
     cfg.dicasPatrocinadas.forEach((d, i) => chk(d.url, 'Dica ' + (i + 1)));
     chk(cfg.listaEsperaPro, 'Lista de espera do Pro');
     chk(cfg.siteUrl, 'Endereço do site');
+    agenda.itens.forEach((x, i) => {
+      const nome = 'Agenda "' + (x.orgao || i + 1) + '"';
+      if (!x.orgao) e.push('Agenda ' + (i + 1) + ': falta o órgão');
+      chk(x.edital, nome + ' (edital)'); chk(x.site, nome + ' (site)');
+      if (!x.inscFim && !x.prova) e.push(nome + ': informe o fim das inscrições ou a data da prova');
+      if (x.inscInicio && x.inscFim && x.inscInicio > x.inscFim) e.push(nome + ': o início das inscrições está depois do fim');
+    });
     if (cfg.contato.whatsapp && !/^\d{12,13}$/.test(cfg.contato.whatsapp)) e.push('WhatsApp: use só números com DDI e DDD, ex.: 5511999999999');
     if (cfg.ads.client && !/^ca-pub-\d{10,20}$/.test(cfg.ads.client)) e.push('AdSense: o ID deve ter o formato ca-pub-0000000000000000');
     return e;
@@ -183,13 +219,14 @@
     const attrs = ' data-i="' + i + '" data-k="' + f.k + '"';
     let input;
     if (f.type === 'textarea') input = '<textarea class="textarea" rows="2" style="min-height:64px"' + attrs + '>' + esc(val) + '</textarea>';
+    else if (f.type === 'select') input = '<select class="select"' + attrs + '>' + f.options.map((o) => '<option value="' + esc(o[0]) + '"' + ((val || '') === o[0] ? ' selected' : '') + '>' + esc(o[1]) + '</option>').join('') + '</select>';
     else if (f.type === 'multi') input = '<select class="select" multiple' + attrs + '>' + PLACES.map((p) => '<option value="' + p[0] + '"' + ((val || []).includes(p[0]) ? ' selected' : '') + '>' + esc(p[1]) + '</option>').join('') + '</select>';
     else input = '<input class="input" type="' + (f.type || 'text') + '"' + attrs + ' value="' + esc(val) + '"' + (f.ph ? ' placeholder="' + esc(f.ph) + '"' : '') + (f.type === 'number' ? ' min="0" step="1"' : '') + '>';
     return '<label class="field' + (f.full ? ' full' : '') + '">' + esc(f.label) + input + (f.help ? '<span class="adm-help">' + f.help + '</span>' : '') + '</label>';
   }
 
   function listEditor(key, schema, opts) {
-    const list = cfg[key];
+    const list = (opts.src || cfg)[key];
     return '<div class="adm-section" data-list="' + key + '">' +
       (list.length ? list.map((it, i) => {
         let status = '';
@@ -202,17 +239,18 @@
       '<div><button class="btn" data-add="' + key + '">+ ' + esc(opts.add) + '</button></div></div>';
   }
 
-  function bindList(root, key, blank) {
+  function bindList(root, key, blank, src, which) {
     const box = $('[data-list="' + key + '"]', root);
     if (!box) return;
+    const obj = src || cfg;
     const onEdit = (e) => {
       const el = e.target.closest('[data-k]'); if (!el) return;
-      const it = cfg[key][+el.dataset.i];
+      const it = obj[key][+el.dataset.i];
       const k = el.dataset.k;
       if (el.multiple) it[k] = Array.from(el.selectedOptions).map((o) => o.value);
       else if (el.type === 'number') it[k] = el.value === '' ? '' : Number(el.value);
       else it[k] = el.value;
-      setDirty(true);
+      setDirty(true, which);
     };
     box.addEventListener('input', onEdit);
     box.addEventListener('change', onEdit);
@@ -220,9 +258,9 @@
       const add = e.target.closest('[data-add]');
       const del = e.target.closest('[data-del]');
       const up = e.target.closest('[data-up]');
-      if (add) { cfg[key].push(clone(blank)); setDirty(true); renderApp(); }
-      else if (del && confirm('Remover este item?')) { cfg[key].splice(+del.dataset.del, 1); setDirty(true); renderApp(); }
-      else if (up && +up.dataset.up > 0) { const i = +up.dataset.up; [cfg[key][i - 1], cfg[key][i]] = [cfg[key][i], cfg[key][i - 1]]; setDirty(true); renderApp(); }
+      if (add) { const n = clone(blank); if ('id' in n) n.id = Date.now().toString(36); obj[key].unshift(n); setDirty(true, which); renderApp(); }
+      else if (del && confirm('Remover este item?')) { obj[key].splice(+del.dataset.del, 1); setDirty(true, which); renderApp(); }
+      else if (up && +up.dataset.up > 0) { const i = +up.dataset.up; [obj[key][i - 1], obj[key][i]] = [obj[key][i], obj[key][i - 1]]; setDirty(true, which); renderApp(); }
     });
   }
 
@@ -276,7 +314,7 @@
   }
 
   /* ---------- Abas ---------- */
-  const TABS = [['geral', 'Visão geral'], ['pix', 'Pix e contato'], ['patrocinios', 'Patrocínios'], ['recomendados', 'Afiliados e dicas'], ['pacotes', 'Preços (Anuncie)'], ['anuncios', 'AdSense e Pro'], ['avancado', 'Avançado']];
+  const TABS = [['geral', 'Visão geral'], ['agenda', 'Agenda'], ['pix', 'Pix e contato'], ['patrocinios', 'Patrocínios'], ['recomendados', 'Afiliados e dicas'], ['pacotes', 'Preços (Anuncie)'], ['anuncios', 'AdSense e Pro'], ['avancado', 'Avançado']];
 
   function viewGeral() {
     const ativos = cfg.patrocinios.filter((p) => !p.ate || p.ate >= today());
@@ -292,9 +330,11 @@
         '<div class="kpi"><b style="color:' + (vencendo.length ? 'var(--warn)' : 'inherit') + '">' + vencendo.length + '</b><span>vencem em 7 dias</span></div>' +
         '<div class="kpi"><b>' + cfg.recomendados.length + '</b><span>links de afiliado</span></div>' +
         '<div class="kpi"><b>' + radarRecent + '</b><span>novidades no Radar (7 dias)</span></div>' +
+        '<div class="kpi"><b>' + agenda.itens.filter((x) => x.inscFim && x.inscFim >= today()).length + '</b><span>inscrições abertas na agenda</span></div>' +
       '</div>' +
       (vencendo.length ? '<div class="panel panel-pad section"><b>Renove com o cliente:</b> ' + vencendo.map((p) => esc(p.titulo) + ' (até ' + esc(p.ate) + ')').join(', ') + '</div>' : '') +
       '<section class="section"><div class="section-head"><h2>Checklist para começar a faturar</h2></div><div class="list">' +
+        check(agenda.itens.length >= 5, 'Agenda de Inscrições com pelo menos 5 concursos (ela traz visitas todo dia)', 'agenda') +
         check(cfg.pix.chave && cfg.pix.nome && cfg.pix.cidade, 'Pix configurado — página <b>Apoie o Atlas</b> no ar', 'pix') +
         check(cfg.contato.whatsapp || cfg.contato.email, 'Contato comercial — página <b>Anuncie no Atlas</b> no ar', 'pix') +
         check(cfg.recomendados.length, 'Pelo menos um link de afiliado (Amazon, Hotmart, Kiwify)', 'recomendados') +
@@ -354,6 +394,40 @@
     { k: 'desc', label: 'Descrição', type: 'textarea', full: true }
   ];
 
+  const AREAS = [['seguranca', 'Segurança'], ['tribunais', 'Tribunais e MP'], ['fiscal', 'Fiscal e controle'], ['administrativa', 'Administrativa'], ['bancaria', 'Bancos e estatais'], ['saude-educacao', 'Saúde e educação'], ['ti', 'Tecnologia'], ['militar', 'Forças Armadas']];
+  const AGENDA = [
+    { k: 'orgao', label: 'Órgão', ph: 'Polícia Militar de Minas Gerais' },
+    { k: 'cargo', label: 'Cargo', ph: 'Soldado' },
+    { k: 'uf', label: 'Estado', type: 'select', options: [['', 'Nacional / federal']].concat(DATA.estados.map((e) => [e.uf, e.nome])) },
+    { k: 'area', label: 'Área', type: 'select', options: AREAS },
+    { k: 'banca', label: 'Banca', ph: 'Instituto AOCP' },
+    { k: 'vagas', label: 'Vagas', type: 'number' },
+    { k: 'salario', label: 'Salário (até)', ph: 'R$ 5.000' },
+    { k: 'inscInicio', label: 'Inscrições: início', type: 'date' },
+    { k: 'inscFim', label: 'Inscrições: fim', type: 'date' },
+    { k: 'prova', label: 'Data da prova', type: 'date' },
+    { k: 'edital', label: 'Link do edital', type: 'url', ph: 'https://' },
+    { k: 'site', label: 'Site oficial do concurso', type: 'url', ph: 'https://' },
+    { k: 'obs', label: 'Observação (opcional)', type: 'textarea', full: true }
+  ];
+  const BLANK_AGENDA = { id: '', orgao: '', cargo: '', uf: '', area: 'seguranca', banca: '', vagas: '', salario: '', inscInicio: '', inscFim: '', prova: '', edital: '', site: '', obs: '' };
+  function agendaStatus(x) {
+    const t = today();
+    if (x.inscInicio && x.inscInicio > t) return '<span class="badge accent">abre ' + esc(x.inscInicio) + '</span>';
+    if (x.inscFim && x.inscFim >= t) return '<span class="badge ok">aberta</span>';
+    if (x.prova && x.prova >= t) return '<span class="badge accent">prova ' + esc(x.prova) + '</span>';
+    return '<span class="badge">encerrada</span>';
+  }
+  function viewAgenda() {
+    const known = new Set(agenda.itens.map((x) => x.edital));
+    const sug = (RADAR.items || []).filter((x) => !known.has(x.u)).slice(0, 8);
+    return '<p class="adm-help">Cadastre os concursos com as datas do edital oficial. O site mostra sozinho o que está aberto, o que abre em breve, as provas próximas e o que encerrou. Os itens mais novos ficam no topo.</p>' +
+      (sug.length ? '<section class="panel panel-pad adm-section"><h2 style="font-size:16px">Sugestões do Radar de Editais</h2><p class="adm-help">Links novos encontrados nos sites oficiais. Confira o edital e cadastre com um clique.</p><div class="list">' +
+        sug.map((x, i) => '<div class="row"><div class="grow"><div class="title" style="white-space:normal">' + esc(x.t) + '</div><div class="sub">' + esc(x.n) + ' · ' + esc(x.d) + '</div></div>' +
+          '<a class="icon-btn" href="' + esc(x.u) + '" target="_blank" rel="noopener" title="Abrir">↗</a><button class="btn btn-sm" data-sug="' + i + '">Cadastrar</button></div>').join('') + '</div></section>' : '') +
+      listEditor('itens', AGENDA, { src: agenda, title: 'orgao', empty: 'Novo concurso', none: 'Nenhum concurso na agenda ainda.', add: 'Adicionar concurso', status: agendaStatus });
+  }
+
   function sponsorStatus(p) {
     if (p.ate && p.ate < today()) return '<span class="badge">expirado</span>';
     if (p.ate && (new Date(p.ate) - new Date(today())) / 86400000 <= 7) return '<span class="badge warn">vence ' + esc(p.ate) + '</span>';
@@ -400,7 +474,7 @@
 
   function renderApp() {
     $('#adm-save').hidden = false; $('#adm-logout').hidden = false;
-    const views = { geral: viewGeral, pix: viewPix, patrocinios: viewPatrocinios, recomendados: viewRecomendados, pacotes: viewPacotes, anuncios: viewAnuncios, avancado: viewAvancado };
+    const views = { geral: viewGeral, agenda: viewAgenda, pix: viewPix, patrocinios: viewPatrocinios, recomendados: viewRecomendados, pacotes: viewPacotes, anuncios: viewAnuncios, avancado: viewAvancado };
     const root = $('#adm');
     root.innerHTML =
       '<div class="page-head" style="margin-bottom:0"><div><span class="eyebrow">' + esc(session.owner + '/' + session.repo) + ' · ' + esc(session.branch) + '</span><h1>Painel do Administrador</h1></div></div>' +
@@ -413,6 +487,16 @@
     bindList(root, 'recomendados', { titulo: '', url: '', preco: '', tag: '', desc: '' });
     bindList(root, 'dicasPatrocinadas', { data: today(), texto: '', url: '' });
     bindList(root, 'pacotes', { nome: '', preco: '', ideal: '', desc: '' });
+    bindList(root, 'itens', BLANK_AGENDA, agenda, 'agenda');
+    $$('[data-sug]', root).forEach((b) => b.addEventListener('click', () => {
+      const known = new Set(agenda.itens.map((x) => x.edital));
+      const x = (RADAR.items || []).filter((y) => !known.has(y.u))[+b.dataset.sug];
+      if (!x) return;
+      agenda.itens.unshift(Object.assign(clone(BLANK_AGENDA), { id: Date.now().toString(36), orgao: x.n.replace(/ — [A-Z]{2}$/, ''), uf: x.uf || '', edital: x.u, obs: x.t }));
+      setDirty(true, 'agenda');
+      toast('Adicionado. Complete as datas conferindo o edital.');
+      renderApp();
+    }));
     drawPix(root);
     const dl = $('#adm-download', root);
     if (dl) dl.addEventListener('click', () => {
@@ -425,8 +509,8 @@
 
   $('#adm-save').addEventListener('click', save);
   $('#adm-logout').addEventListener('click', () => {
-    if (dirty && !confirm('Há alterações não publicadas. Sair mesmo assim?')) return;
-    sessionStorage.removeItem(SS); session = null; cfg = null; setDirty(false); renderLogin();
+    if ((dirty || dirtyAgenda) && !confirm('Há alterações não publicadas. Sair mesmo assim?')) return;
+    sessionStorage.removeItem(SS); session = null; cfg = null; setDirty(false, 'all'); renderLogin();
   });
 
   (async function init() {
