@@ -88,7 +88,7 @@
           ['Pesquisa avançada', 'https://www.in.gov.br/consulta'],
           ['Leitura do jornal do dia', 'https://www.in.gov.br/leiturajornal']
         ]),
-        L('Querido Diário', 'https://queridodiario.ok.org.br', 'Busca gratuita em diários oficiais de centenas de municípios. Ótimo para concursos de prefeituras.', ['municipal', 'prefeitura', 'busca']),
+        L('Querido Diário', 'https://queridodiario.org.br', 'Busca gratuita em diários oficiais de centenas de municípios. Ótimo para concursos de prefeituras.', ['municipal', 'prefeitura', 'busca']),
         L('Diário de Justiça Eletrônico Nacional (DJEN)', 'https://comunica.pje.jus.br', 'Comunicações processuais de todos os tribunais (CNJ).', ['justiça']),
         L('Diário Oficial dos Municípios (vários estados)', 'https://www.diariomunicipal.com.br', 'Diários de associações de municípios (PE, MA, MT, RN e outros).', ['municipal', 'prefeitura']),
         L('Diário Oficial dos Municípios de SC (DOM/SC)', 'https://www.diariomunicipal.sc.gov.br', 'Todos os municípios catarinenses consorciados.', ['municipal', 'sc'])
@@ -301,7 +301,7 @@
     }),
     E('AL', 'Alagoas', 'Nordeste', 'Maceió', {
       gov: 'https://www.alagoas.al.gov.br', pm: 'https://www.pm.al.gov.br', pc: 'https://www.pc.al.gov.br',
-      sefaz: 'https://www.sefaz.al.gov.br', tce: 'https://tce.al.gov.br', al: 'https://www.al.al.leg.br'
+      sefaz: 'https://www.sefaz.al.gov.br', tce: 'https://www.tceal.tc.br', al: 'https://www.al.al.leg.br'
     }),
     E('AP', 'Amapá', 'Norte', 'Macapá', {
       gov: 'https://www.portal.ap.gov.br', sefaz: 'https://www.sefaz.ap.gov.br', tce: 'https://www.tce.ap.gov.br', al: 'https://www.al.ap.gov.br'
@@ -321,7 +321,7 @@
       tce: 'https://www.tce.ce.gov.br', al: 'https://www.al.ce.gov.br', dpe: 'https://www.defensoria.ce.def.br'
     }),
     E('DF', 'Distrito Federal', 'Centro-Oeste', 'Brasília', {
-      gov: 'https://www.df.gov.br', doe: 'https://www.dodf.df.gov.br', pm: 'https://pmdf.df.gov.br', pc: 'https://www.pcdf.df.gov.br',
+      gov: 'https://www.df.gov.br', doe: 'https://www.dodf.df.gov.br', pc: 'https://www.pcdf.df.gov.br',
       cbm: 'https://www.cbm.df.gov.br', sefaz: 'https://www.economia.df.gov.br', tce: 'https://www.tc.df.gov.br',
       al: 'https://www.cl.df.gov.br', dpe: 'https://www.defensoria.df.gov.br',
       tj: 'https://www.tjdft.jus.br', mp: 'https://www.mpdft.mp.br'
@@ -361,7 +361,7 @@
       sefaz: 'https://www.sefaz.pb.gov.br', tce: 'https://tce.pb.gov.br', al: 'https://www.al.pb.leg.br'
     }),
     E('PR', 'Paraná', 'Sul', 'Curitiba', {
-      gov: 'https://www.parana.pr.gov.br', doe: 'https://documentos.dioe.pr.gov.br', pm: 'https://www.pmpr.pr.gov.br',
+      gov: 'https://www.parana.pr.gov.br', doe: 'https://www.parana.pr.gov.br/servicos/Administracao/Transparencia/Consultar-o-Diario-Oficial-do-Estado-DIOE-Epol8QoB', pm: 'https://www.pmpr.pr.gov.br',
       pc: 'https://www.policiacivil.pr.gov.br', cbm: 'https://www.bombeiros.pr.gov.br', sefaz: 'https://www.fazenda.pr.gov.br',
       tce: 'https://www1.tce.pr.gov.br', al: 'https://www.assembleia.pr.leg.br', dpe: 'https://www.defensoriapublica.pr.def.br'
     }),
@@ -380,7 +380,7 @@
       tce: 'https://www.tcerj.tc.br', al: 'https://www.alerj.rj.gov.br', dpe: 'https://defensoria.rj.def.br'
     }),
     E('RN', 'Rio Grande do Norte', 'Nordeste', 'Natal', {
-      gov: 'https://www.rn.gov.br', doe: 'http://diariooficial.rn.gov.br', pm: 'https://www.pm.rn.gov.br',
+      gov: 'https://www.rn.gov.br', doe: 'https://www.diariooficial.rn.gov.br', pm: 'https://www.pm.rn.gov.br',
       pc: 'https://www.policiacivil.rn.gov.br', sefaz: 'https://www.set.rn.gov.br', tce: 'https://www.tce.rn.gov.br', al: 'https://www.al.rn.leg.br'
     }),
     E('RS', 'Rio Grande do Sul', 'Sul', 'Porto Alegre', {

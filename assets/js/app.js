@@ -654,7 +654,7 @@
       ['Concursos abertos em ' + e.nome, google('concursos abertos ' + e.nome + ' edital ' + new Date().getFullYear())],
       ['Prefeituras de ' + e.nome, google('concurso prefeitura ' + e.nome + ' edital ' + new Date().getFullYear())],
       ['Prefeitura de ' + e.capital, google('concurso prefeitura de ' + e.capital + ' edital')],
-      ['Diários municipais (Querido Diário)', 'https://queridodiario.ok.org.br']
+      ['Diários municipais (Querido Diário)', 'https://queridodiario.org.br']
     ];
 
     return {
