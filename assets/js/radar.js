@@ -14,8 +14,21 @@
   const DATA = window.ATLAS_DATA;
   const R = window.ATLAS_RADAR || {};
   const CLOSED = /(encerrad|resultado|gabarito|homologa|convoca|nomea|classifica|recurso|aprovados)/i;
+  const RULES = window.ATLAS_RADAR_RULES;
   const valid = (x) => x && A.safeUrl(x.u) && !CLOSED.test(x.t || '');
-  const robotOpen = (R.abertas || []).filter(valid);
+  const isBancaSite = (u) => !!(A.bancas && A.bancas.list.some((b) => b.u === u));
+  // Revalida no navegador todo dia: prazo vencido some mesmo antes da próxima varredura.
+  const robotOpen = (R.abertas || []).filter((x) => valid(x) && (!RULES || (!RULES.expired(x.t) && RULES.isConcurso(x.t, x.banca || isBancaSite(x.site)))))
+    .map((x) => Object.assign({}, x, {
+      uf: x.uf || (RULES ? RULES.ufFromText(x.t) : ''),
+      t: (() => {
+        const t = RULES ? RULES.clean(x.t) : x.t;
+        const banca = x.n.split(' (')[0];
+        if (RULES && RULES.isGeneric(t)) return 'Concursos com inscrições abertas — página da ' + banca;
+        if (RULES && !RULES.hasContext(t)) return banca + ': ' + t;   // ex.: "Instituto Mais: inscrições de 08/09 a 08/10"
+        return t;
+      })()
+    }));
   const novidades = (R.items || []).filter((x) => valid(x) && daysUntil(x.d) >= -7);
   const confirmed = () => (A.agenda ? A.agenda.abertas : []);
   const totalOpen = () => confirmed().length + robotOpen.length;
