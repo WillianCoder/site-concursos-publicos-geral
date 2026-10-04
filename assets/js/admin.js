@@ -112,7 +112,21 @@
     }
   }
 
+  // Modo demonstração: abre o painel com as configurações atuais do site, sem token e sem publicar nada.
+  function startDemo() {
+    const [owner, repo] = (repoFromConfig() || 'WillianCoder/site-concursos-publicos-geral').split('/');
+    session = { demo: true, owner, repo, branch: 'main' };
+    cfg = normalize(clone(LOCAL));
+    agenda = clone(window.ATLAS_AGENDA || { atualizadoEm: '', itens: [] });
+    if (!Array.isArray(agenda.itens)) agenda.itens = [];
+    renderApp();
+  }
+
   async function save() {
+    if (session && session.demo) {
+      toast('Modo demonstração: nada é publicado. No site oficial, entre com o token para salvar.');
+      return;
+    }
     const errs = validate();
     if (errs.length) { alert('Corrija antes de publicar:\n\n• ' + errs.join('\n• ')); return; }
     const btn = $('#adm-save');
@@ -180,6 +194,7 @@
         '<label class="field">Branch publicada<input class="input" name="branch" required value="main" autocomplete="off"></label>' +
         '<label class="field">Token de acesso do GitHub<input class="input" name="token" type="password" required placeholder="github_pat_…" autocomplete="off" spellcheck="false"></label>' +
         '<button class="btn btn-primary" type="submit">Entrar</button>' +
+        '<button class="btn" type="button" id="adm-demo">Ver o painel em modo demonstração</button>' +
         '<details><summary style="cursor:pointer;font-weight:600">Como criar o token (2 minutos, uma vez a cada 90 dias)</summary>' +
           '<ol style="margin-top:10px">' +
             '<li>Abra <a class="grad-text" href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">github.com/settings/personal-access-tokens/new</a>.</li>' +
@@ -190,6 +205,7 @@
           '</ol></details>' +
         '<p class="adm-help">O token fica só nesta aba do navegador e some ao fechá-la. Ative a verificação em duas etapas (2FA) na sua conta do GitHub.</p>' +
       '</form>';
+    $('#adm-demo').addEventListener('click', startDemo);
     $('#login').addEventListener('submit', async (ev) => {
       ev.preventDefault();
       const f = Object.fromEntries(new FormData(ev.target));
@@ -477,7 +493,8 @@
     const views = { geral: viewGeral, agenda: viewAgenda, pix: viewPix, patrocinios: viewPatrocinios, recomendados: viewRecomendados, pacotes: viewPacotes, anuncios: viewAnuncios, avancado: viewAvancado };
     const root = $('#adm');
     root.innerHTML =
-      '<div class="page-head" style="margin-bottom:0"><div><span class="eyebrow">' + esc(session.owner + '/' + session.repo) + ' · ' + esc(session.branch) + '</span><h1>Painel do Administrador</h1></div></div>' +
+      (session.demo ? '<div class="panel panel-pad" style="margin-bottom:16px;border-color:var(--warn)"><b>Modo demonstração.</b> <span class="muted">Explore à vontade: nada aqui é publicado. Para salvar de verdade, entre com o token do GitHub no site publicado.</span></div>' : '') +
+      '<div class="page-head" style="margin-bottom:0"><div><span class="eyebrow">' + esc(session.owner + '/' + session.repo) + ' · ' + esc(session.demo ? 'demonstração' : session.branch) + '</span><h1>Painel do Administrador</h1></div></div>' +
       '<nav class="adm-tabs">' + TABS.map((t) => '<button class="chip' + (tab === t[0] ? ' sel' : '') + '" data-tab="' + t[0] + '">' + t[1] + '</button>').join('') + '</nav>' +
       '<div id="adm-view">' + views[tab]() + '</div>';
     $$('[data-tab]', root).forEach((b) => b.addEventListener('click', () => { tab = b.dataset.tab; renderApp(); }));
@@ -509,7 +526,7 @@
 
   $('#adm-save').addEventListener('click', save);
   $('#adm-logout').addEventListener('click', () => {
-    if ((dirty || dirtyAgenda) && !confirm('Há alterações não publicadas. Sair mesmo assim?')) return;
+    if (!(session && session.demo) && (dirty || dirtyAgenda) && !confirm('Há alterações não publicadas. Sair mesmo assim?')) return;
     sessionStorage.removeItem(SS); session = null; cfg = null; setDirty(false, 'all'); renderLogin();
   });
 
