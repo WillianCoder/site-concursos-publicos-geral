@@ -671,3 +671,19 @@ details.ag-section > summary::-webkit-details-marker { display: none; }
 .os-states > summary::-webkit-details-marker { display: none; }
 .os-states[open] > summary .i { transform: rotate(90deg); }
 .os-states > .os-out { margin-top: 8px; }
+
+/* ---------- Radar unificado ---------- */
+.os-group-title { font: 600 12px/1 var(--font); text-transform: uppercase; letter-spacing: .1em; color: var(--faint); padding: 14px 2px 4px; }
+.os-group-title .muted { text-transform: none; letter-spacing: 0; font-weight: 500; }
+.open-search .os-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border-radius: 12px; background: var(--input); border: 1px solid var(--border); }
+.os-info { flex: 1; min-width: 180px; }
+.os-info .title { font-weight: 600; font-size: 14px; }
+.os-info .sub { font-size: 12px; color: var(--faint); margin-top: 2px; }
+.os-chip { color: var(--text); }
+.os-chip .i { color: var(--c1); }
+.ag-links { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.card-links .chip .i { color: var(--c1); }
+.os-more > summary { list-style: none; cursor: pointer; margin: 4px 0; width: fit-content; }
+.os-more > summary::-webkit-details-marker { display: none; }
+.os-more[open] > summary { display: none; }
+@media (max-width: 640px) { .ag-section .section-head > .muted { display: none; } }

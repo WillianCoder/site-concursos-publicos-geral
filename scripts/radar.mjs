@@ -20,6 +20,9 @@ const MAX_ITEMS = 400;
 const MAX_SEEN_PER_SITE = 300;
 const KEY = /(concurso|edital|editais|processo seletivo|sele[cç][aã]o p[uú]blica|inscri[cç][oõ]es abertas|convoca[cç][aã]o|nomea[cç][aã]o|homologa[cç][aã]o|gabarito)/i;
 const SKIP = /\.(jpg|jpeg|png|gif|svg|webp|zip|mp4|mp3)(\?|$)/i;
+// Inscrições abertas: o link precisa falar de abertura/inscrição e NÃO de encerramento ou etapas posteriores.
+const OPEN = /(inscri[cç][oõ]es abertas|abertura (das |de )?inscri|edital de abertura|inscri[cç][oõ]es prorrogadas|per[ií]odo de inscri|inscreva-se|abertas as inscri)/i;
+const CLOSED = /(encerrad|resultado|gabarito|homologa|convoca|nomea|classifica|recurso|retifica[cç][aã]o do resultado|posse|aprovados)/i;
 
 const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
 const sandbox = { window: {} };
@@ -67,9 +70,13 @@ async function scan(t) {
   }
   return found;
 }
+const isOpen = (text, href) => OPEN.test(text + ' ' + decodeURIComponent(href)) && !CLOSED.test(text);
 
 const results = { ok: 0, fail: 0, fresh: 0 };
 const newItems = [];
+const openNow = [];                       // retrato de hoje: inscrições abertas encontradas em cada site
+const reached = new Set();
+state.openFirst = state.openFirst || {};  // primeira vez em que cada link de inscrição aberta foi visto
 let i = 0;
 await Promise.all(Array.from({ length: 10 }, async () => {
   while (i < targets.length) {
@@ -78,6 +85,14 @@ await Promise.all(Array.from({ length: 10 }, async () => {
     try { found = await scan(t); } catch { /* site bloqueou ou caiu */ }
     if (!found) { results.fail++; continue; }
     results.ok++;
+    reached.add(t.u);
+    for (const [href, text] of found) {
+      if (!isOpen(text, href)) continue;
+      const h = hash(href);
+      const first = state.openFirst[h] || today;
+      state.openFirst[h] = first;
+      openNow.push({ site: t.u, n: t.n, uf: t.uf, t: text.slice(0, 180), u: href, d: first });
+    }
     const prev = state.sites[t.u];
     const seen = new Set(prev ? prev.seen : []);
     for (const [href, text] of found) {
@@ -92,20 +107,29 @@ await Promise.all(Array.from({ length: 10 }, async () => {
 }));
 
 const cutoff = new Date(Date.now() - KEEP_DAYS * 86400000).toISOString().slice(0, 10);
-const items = newItems.concat(feed.items || []).filter((x) => x.d >= cutoff).slice(0, MAX_ITEMS);
+const items = newItems.concat(feed.items || []).filter((x) => x.d >= cutoff && !CLOSED.test(x.t)).slice(0, MAX_ITEMS);
+// Sites que não responderam hoje mantêm as inscrições abertas da última leitura (até 30 dias).
+const keepOpen = (feed.abertas || []).filter((x) => !reached.has(x.site) && x.d >= cutoff);
+const seenOpen = new Set();
+const abertas = openNow.concat(keepOpen).filter((x) => { if (seenOpen.has(x.u)) return false; seenOpen.add(x.u); return true; })
+  .sort((a, b) => (b.d || '').localeCompare(a.d || '')).slice(0, MAX_ITEMS);
+// Limpa da memória links de inscrição que sumiram há muito tempo.
+const openHashes = new Set(abertas.map((x) => hash(x.u)));
+for (const [h, d] of Object.entries(state.openFirst)) if (!openHashes.has(h) && d < cutoff) delete state.openFirst[h];
 const out = {
   updatedAt: new Date().toISOString(),
   since: feed.since || today,
   checked: targets.length,
   reachable: results.ok,
+  abertas,
   items
 };
 
 mkdirSync(new URL('data/', ROOT), { recursive: true });
 writeFileSync(STATE_FILE, JSON.stringify(state));
 writeFileSync(FEED_FILE, '/* Gerado automaticamente pelo Radar de Editais (scripts/radar.mjs). Não edite à mão. */\nwindow.ATLAS_RADAR = ' + JSON.stringify(out, null, 0) + ';\n');
-console.log(`Radar: ${results.ok} sites lidos, ${results.fail} sem acesso, ${results.fresh} novos na memória, ${newItems.length} novidades hoje.`);
+console.log(`Radar: ${results.ok} sites lidos, ${results.fail} sem acesso, ${abertas.length} inscrições abertas, ${newItems.length} novidades hoje.`);
 if (process.env.GITHUB_STEP_SUMMARY) {
-  writeFileSync(process.env.GITHUB_STEP_SUMMARY, `## Radar de Editais\n\n- Sites lidos: **${results.ok}** de ${targets.length}\n- Novidades hoje: **${newItems.length}**\n\n` +
+  writeFileSync(process.env.GITHUB_STEP_SUMMARY, `## Radar de Editais\n\n- Sites lidos: **${results.ok}** de ${targets.length}\n- Inscrições abertas encontradas: **${abertas.length}**\n- Novidades hoje: **${newItems.length}**\n\n` +
     newItems.slice(0, 50).map((x) => `- **${x.n}**: [${x.t}](${x.u})`).join('\n') + '\n', { flag: 'a' });
 }
