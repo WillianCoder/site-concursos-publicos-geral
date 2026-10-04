@@ -11,6 +11,8 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import vm from 'node:vm';
+import { createRequire } from 'node:module';
+const RULES = createRequire(import.meta.url)('../assets/js/radar-rules.js');
 
 const ROOT = new URL('../', import.meta.url);
 const STATE_FILE = new URL('data/radar-state.json', ROOT);
@@ -32,7 +34,7 @@ const DATA = sandbox.window.ATLAS_DATA;
 const targets = [];
 for (const c of DATA.categorias) {
   if (['legislacao', 'estudo', 'noticias', 'servicos'].includes(c.id)) continue;
-  for (const it of c.itens) targets.push({ u: it.u, n: it.n, uf: '' });
+  for (const it of c.itens) targets.push({ u: it.u, n: it.n, uf: '', banca: c.id === 'bancas' });
 }
 for (const e of DATA.estados) {
   for (const [k, u] of Object.entries(e.links)) targets.push({ u, n: `${DATA.tipos[k]?.nome || k} — ${e.uf}`, uf: e.uf });
@@ -87,11 +89,12 @@ await Promise.all(Array.from({ length: 10 }, async () => {
     results.ok++;
     reached.add(t.u);
     for (const [href, text] of found) {
-      if (!isOpen(text, href)) continue;
+      // Só inscrição aberta de concurso/seleção, com prazo ainda válido.
+      if (!isOpen(text, href) || !RULES.isConcurso(text, t.banca) || RULES.expired(text)) continue;
       const h = hash(href);
       const first = state.openFirst[h] || today;
       state.openFirst[h] = first;
-      openNow.push({ site: t.u, n: t.n, uf: t.uf, t: text.slice(0, 180), u: href, d: first });
+      openNow.push({ site: t.u, n: t.n, uf: t.uf || RULES.ufFromText(text), t: RULES.clean(text).slice(0, 180), u: href, d: first, banca: !!t.banca });
     }
     const prev = state.sites[t.u];
     const seen = new Set(prev ? prev.seen : []);
@@ -99,7 +102,7 @@ await Promise.all(Array.from({ length: 10 }, async () => {
       const h = hash(href);
       if (seen.has(h)) continue;
       seen.add(h);
-      if (prev) newItems.push({ site: t.u, n: t.n, uf: t.uf, t: text.slice(0, 180), u: href, d: today });
+      if (prev && RULES.isConcurso(text, t.banca)) newItems.push({ site: t.u, n: t.n, uf: t.uf || RULES.ufFromText(text), t: text.slice(0, 180), u: href, d: today });
     }
     if (!prev) results.fresh++;
     state.sites[t.u] = { seen: [...seen].slice(-MAX_SEEN_PER_SITE), last: today };
@@ -109,7 +112,7 @@ await Promise.all(Array.from({ length: 10 }, async () => {
 const cutoff = new Date(Date.now() - KEEP_DAYS * 86400000).toISOString().slice(0, 10);
 const items = newItems.concat(feed.items || []).filter((x) => x.d >= cutoff && !CLOSED.test(x.t)).slice(0, MAX_ITEMS);
 // Sites que não responderam hoje mantêm as inscrições abertas da última leitura (até 30 dias).
-const keepOpen = (feed.abertas || []).filter((x) => !reached.has(x.site) && x.d >= cutoff);
+const keepOpen = (feed.abertas || []).filter((x) => !reached.has(x.site) && x.d >= cutoff && !RULES.expired(x.t));
 const seenOpen = new Set();
 const abertas = openNow.concat(keepOpen).filter((x) => { if (seenOpen.has(x.u)) return false; seenOpen.add(x.u); return true; })
   .sort((a, b) => (b.d || '').localeCompare(a.d || '')).slice(0, MAX_ITEMS);
