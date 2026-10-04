@@ -168,7 +168,7 @@
     agenda.itens.forEach((x, i) => {
       const nome = 'Agenda "' + (x.orgao || i + 1) + '"';
       if (!x.orgao) e.push('Agenda ' + (i + 1) + ': falta o órgão');
-      chk(x.edital, nome + ' (edital)'); chk(x.site, nome + ' (site)');
+      chk(x.edital, nome + ' (edital)'); chk(x.site, nome + ' (site)'); chk(x.linkBanca, nome + ' (página na banca)');
       if (!x.inscFim && !x.prova) e.push(nome + ': informe o fim das inscrições ou a data da prova');
       if (x.inscInicio && x.inscFim && x.inscInicio > x.inscFim) e.push(nome + ': o início das inscrições está depois do fim');
     });
@@ -424,9 +424,10 @@
     { k: 'prova', label: 'Data da prova', type: 'date' },
     { k: 'edital', label: 'Link do edital', type: 'url', ph: 'https://' },
     { k: 'site', label: 'Site oficial do concurso', type: 'url', ph: 'https://' },
+    { k: 'linkBanca', label: 'Página do concurso na banca (convocações)', type: 'url', ph: 'https://', help: 'Onde a banca chama os candidatos. Vazio = o site procura sozinho no site da banca.' },
     { k: 'obs', label: 'Observação (opcional)', type: 'textarea', full: true }
   ];
-  const BLANK_AGENDA = { id: '', orgao: '', cargo: '', uf: '', area: 'seguranca', banca: '', vagas: '', salario: '', inscInicio: '', inscFim: '', prova: '', edital: '', site: '', obs: '' };
+  const BLANK_AGENDA = { id: '', orgao: '', cargo: '', uf: '', area: 'seguranca', banca: '', vagas: '', salario: '', inscInicio: '', inscFim: '', prova: '', edital: '', site: '', linkBanca: '', obs: '' };
   function agendaStatus(x) {
     const t = today();
     if (x.inscInicio && x.inscInicio > t) return '<span class="badge accent">abre ' + esc(x.inscInicio) + '</span>';

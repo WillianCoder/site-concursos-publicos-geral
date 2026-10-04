@@ -657,3 +657,17 @@ details.ag-section > summary::-webkit-details-marker { display: none; }
   .ag-item { grid-template-columns: 54px minmax(0, 1fr); gap: 12px; }
   .ag-side { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; align-items: center; }
 }
+
+/* ---------- Radar: busca de inscrições abertas ---------- */
+.open-search { display: flex; flex-direction: column; gap: 14px; border-color: color-mix(in srgb, var(--c1) 30%, var(--border)); }
+.open-search h3 { font-size: 17px; }
+.os-out { display: flex; flex-direction: column; gap: 8px; }
+.os-out:empty { display: none; }
+.os-row { flex-wrap: wrap; background: var(--input); }
+.os-row .grow { min-width: 160px; }
+.os-parts { display: flex; gap: 6px; flex-wrap: wrap; }
+.banca-group { border-color: color-mix(in srgb, var(--c2) 35%, var(--border)); }
+.os-states > summary { list-style: none; cursor: pointer; }
+.os-states > summary::-webkit-details-marker { display: none; }
+.os-states[open] > summary .i { transform: rotate(90deg); }
+.os-states > .os-out { margin-top: 8px; }

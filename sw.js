@@ -1,5 +1,5 @@
 /* Atlas Concursos — service worker: funciona offline depois do primeiro acesso. */
-const CACHE = 'atlas-v4';
+const CACHE = 'atlas-v5';
 const SHELL = [
   './',
   'index.html',

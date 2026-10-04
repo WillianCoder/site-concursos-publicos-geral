@@ -46,6 +46,15 @@
     toast(added ? 'Adicionado aos Meus concursos, com contagem regressiva' : 'Você já acompanha este concurso');
   }
 
+  // "Na banca": página onde a banca chama o candidato (link do painel ou pesquisa no site da banca).
+  function bancaBtn(x) {
+    const direct = A.safeUrl(x.linkBanca);
+    const b = A.bancas && x.banca ? A.bancas.byName(x.banca) : null;
+    const href = direct || (b ? A.bancas.links(b, x.orgao.replace(/\s*\(exemplo\)/i, '')).chamada : '');
+    if (!href) return '';
+    return '<a class="btn btn-sm" href="' + esc(href) + '" target="_blank" rel="noopener" title="Abrir a página da banca onde saem convocações e resultados">' + icon('clipboard') + 'Na banca</a>';
+  }
+
   function item({ x, s }) {
     const [y, m, d] = (s.date || '').split('-');
     const following = Store.state.exams.some((e) => e.agendaId === x.id);
@@ -66,6 +75,7 @@
         bar + (x.obs ? '<div class="ag-obs">' + esc(x.obs) + '</div>' : '') + '</div>' +
       '<div class="ag-side"><span class="badge ' + s.tone + '">' + esc(s.pill) + '</span><div class="ag-actions">' +
         (A.safeUrl(x.edital) ? A.extLink(x.edital, 'btn btn-sm btn-primary', 'Edital') : '') +
+        bancaBtn(x) +
         (A.safeUrl(x.site) ? A.extLink(x.site, 'icon-btn', icon('external')).replace('<a ', '<a title="Site oficial" ') : '') +
         (s.key !== 'encerradas' ? '<button class="icon-btn' + (following ? ' fav on' : '') + '" data-follow="' + esc(x.id) + '" title="' + (following ? 'Você acompanha' : 'Acompanhar em Meus concursos') + '" aria-label="Acompanhar">' + icon('star') + '</button>' : '') +
       '</div></div></article>';
