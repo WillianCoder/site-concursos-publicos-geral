@@ -106,7 +106,18 @@ O guia completo de monetização está na página do Notion criada junto com o p
 
 Resumo em [SECURITY.md](SECURITY.md). Principais camadas: site estático (sem servidor nem banco para invadir), política de conteúdo (CSP) em todas as páginas, cabeçalhos HTTP de segurança em `_headers` (Cloudflare Pages/Netlify), proteção contra clickjacking, links aceitos apenas em `http(s)`, backups higienizados, painel autenticado pelo GitHub, `security.txt`, `robots.txt` e Dependabot.
 
-> Para ter **todos** os cabeçalhos de segurança e ainda manter o repositório privado de graça, publique pelo **Cloudflare Pages** (conecte o repositório, sem comando de build, pasta `/`).
+> Para ter **todos** os cabeçalhos de segurança e ainda manter o repositório privado de graça, publique pelo **Cloudflare Pages** (passo a passo abaixo).
+
+Em qualquer hospedagem, só vão ao ar os arquivos montados por `scripts/build-site.sh` (páginas, `assets/`, `data/radar.js`, `data/agenda.js`, `_headers`, `security.txt`). O código do robô, o README e o estado interno do Radar ficam só no repositório.
+
+### Publicar pelo Cloudflare Pages (repositório privado, grátis)
+
+1. Crie uma conta em cloudflare.com → **Workers & Pages → Create → Pages → Connect to Git** e autorize só este repositório.
+2. Configure: **Production branch** `main` · **Framework preset** None · **Build command** `bash scripts/build-site.sh` · **Build output directory** `_site`.
+3. Abra o endereço `https://<nome>.pages.dev` e confira o site e o `admin.html`.
+4. Só depois disso torne o repositório privado (**Settings → General → Danger Zone → Change visibility**) e desative o GitHub Pages (**Settings → Pages**); apague `.github/workflows/pages.yml` para ele não tentar publicar.
+5. Cada commit em `main` (inclusive os do robô do Radar e os do Painel) republica o site sozinho.
+6. No Painel, aba **Avançado**, preencha o **endereço do site** com o novo link. O token do Painel precisa continuar com acesso a este repositório (Contents e Actions: Read and write).
 
 ## Rodar no computador
 
