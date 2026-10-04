@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.googletagservices.com https://*.doubleclick.net https://*.adtrafficquality.google https://fundingchoicesmessages.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com https://*.google.com https://*.googlesyndication.com https://*.doubleclick.net https://*.adtrafficquality.google https://*.firebaseio.com https://*.firebaseapp.com https://www.gstatic.com; frame-src https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.firebaseapp.com https://*.adtrafficquality.google; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests">
+  <meta name="referrer" content="strict-origin-when-cross-origin">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Atlas Concursos — todos os sites de concursos públicos do Brasil em um só lugar</title>
+  <meta name="description" content="Portal gratuito que reúne os sites oficiais de concursos públicos do Brasil: bancas, diários oficiais, polícias, tribunais e órgãos dos 27 estados. Salve seus links, organize seus estudos e acompanhe suas provas.">
+  <meta name="theme-color" content="#070a12">
+  <meta property="og:title" content="Atlas Concursos">
+  <meta property="og:description" content="Todos os sites de concursos públicos do Brasil em um só lugar — grátis.">
+  <meta property="og:type" content="website">
+  <link rel="icon" href="assets/img/logo.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/styles.css">
+  <script src="assets/js/theme.js"></script>
+</head>
+<body>
+  <div class="bg-grid" aria-hidden="true"></div>
+  <div class="bg-glow" aria-hidden="true"></div>
+
+  <a class="skip" href="#view">Pular para o conteúdo</a>
+
+  <div class="shell">
+    <!-- ===== Barra lateral ===== -->
+    <aside class="sidebar" id="sidebar" aria-label="Navegação principal">
+      <a class="brand" href="#/">
+        <img src="assets/img/logo.svg" alt="" width="34" height="34">
+        <span class="brand-text">Atlas<b>Concursos</b></span>
+      </a>
+
+      <button class="search-trigger" data-action="palette" type="button">
+        <span data-icon="search"></span>
+        <span>Buscar qualquer site…</span>
+        <kbd>Ctrl K</kbd>
+      </button>
+
+      <nav class="nav" id="nav"></nav>
+
+      <div class="sidebar-foot">
+        <div class="ad-slot" data-slot="sidebar"></div>
+        <button class="theme-toggle" data-action="theme" type="button">
+          <span data-icon="moon" class="only-dark"></span>
+          <span data-icon="sun" class="only-light"></span>
+          <span class="only-dark">Tema: escuro</span>
+          <span class="only-light">Tema: claro</span>
+        </button>
+      </div>
+    </aside>
+    <div class="scrim" data-action="close-nav"></div>
+
+    <!-- ===== Conteúdo ===== -->
+    <div class="main">
+      <header class="topbar">
+        <button class="icon-btn menu-btn" data-action="open-nav" type="button" aria-label="Abrir menu">
+          <span data-icon="menu"></span>
+        </button>
+        <div class="crumbs" id="crumbs"></div>
+        <div class="topbar-actions">
+          <button class="icon-btn" data-action="palette" type="button" aria-label="Buscar"><span data-icon="search"></span></button>
+          <button class="icon-btn hide-mobile" data-action="theme" type="button" aria-label="Alternar tema">
+            <span data-icon="moon" class="only-dark"></span><span data-icon="sun" class="only-light"></span>
+          </button>
+          <a class="account-chip" href="#/conta" id="account-chip"></a>
+        </div>
+      </header>
+
+      <main id="view" class="view" tabindex="-1"></main>
+
+      <footer class="footer">
+        <div class="ad-slot" data-slot="footer"></div>
+        <p>
+          <b>Atlas Concursos</b> — projeto gratuito e independente. Não é um site do governo.
+          Sempre confirme datas e regras no <b>edital oficial</b>.
+        </p>
+        <p class="footer-links">
+          <a href="#/sobre">Sobre</a>
+          <a href="privacidade.html">Privacidade</a>
+          <a href="termos.html">Termos de uso</a>
+        </p>
+      </footer>
+    </div>
+  </div>
+
+  <!-- Barra inferior (celular) -->
+  <nav class="tabbar" aria-label="Atalhos">
+    <a href="#/" data-tab="home"><span data-icon="home"></span>Início</a>
+    <a href="#/explorar" data-tab="explorar"><span data-icon="grid"></span>Explorar</a>
+    <button data-action="palette" type="button"><span data-icon="search"></span>Buscar</button>
+    <a href="#/meus-links" data-tab="meus-links"><span data-icon="star"></span>Salvos</a>
+    <a href="#/ferramentas" data-tab="ferramentas"><span data-icon="toolbox"></span>Estudo</a>
+  </nav>
+
+  <!-- Busca global -->
+  <div class="palette" id="palette" role="dialog" aria-modal="true" aria-label="Buscar" hidden>
+    <div class="palette-box">
+      <div class="palette-input">
+        <span data-icon="search"></span>
+        <input id="palette-input" type="search" autocomplete="off" spellcheck="false"
+               placeholder="Ex.: polícia militar MG, diário oficial SP, Cebraspe, Lei 8.112…">
+        <kbd>Esc</kbd>
+      </div>
+      <div class="palette-results" id="palette-results" role="listbox"></div>
+      <div class="palette-foot"><span><kbd>↑</kbd><kbd>↓</kbd> navegar</span><span><kbd>Enter</kbd> abrir</span><span><kbd>Ctrl</kbd>+<kbd>Enter</kbd> salvar</span></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div id="consent"></div>
+
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/data.js"></script>
+  <script src="data/radar.js"></script>
+  <script src="data/agenda.js"></script>
+  <script src="assets/js/app.js"></script>
+  <script src="assets/js/tools.js"></script>
+  <script src="assets/js/features.js"></script>
+  <script src="assets/js/finder.js"></script>
+  <script src="assets/js/agenda.js"></script>
+  <script src="assets/js/vendor/qrcode.js"></script>
+  <script src="assets/js/monetize.js"></script>
+  <script src="assets/js/cloud.js"></script>
+</body>
+</html>

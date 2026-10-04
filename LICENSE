@@ -1,21 +1,19 @@
-MIT License
+Atlas Concursos
+Copyright (c) 2026 Willian Salles. Todos os direitos reservados.
 
-Copyright (c) 2026 Willian Salles
+Este software, incluindo o código-fonte, o design, os textos, a marca
+"Atlas Concursos", o logotipo e a seleção e organização do catálogo de
+sites, é protegido pela Lei 9.609/1998 (programas de computador) e pela
+Lei 9.610/1998 (direitos autorais).
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+É proibido copiar, reproduzir, modificar, distribuir, publicar, sublicenciar
+ou explorar comercialmente este software, no todo ou em parte, sem
+autorização prévia e por escrito do titular.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+A visualização do código neste repositório não concede nenhuma licença de uso.
+Para licenciamento, parcerias ou versões personalizadas, entre em contato
+com o titular pelo repositório:
+https://github.com/WillianCoder/site-concursos-publicos-geral
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+Componentes de terceiros mantêm suas próprias licenças:
+- assets/js/vendor/qrcode.js — QR Code Generator, (c) 2009 Kazuhiko Arase, licença MIT.

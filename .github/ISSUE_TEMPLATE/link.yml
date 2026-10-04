@@ -1,0 +1,21 @@
+name: Link quebrado ou sugestão de site
+description: Avise sobre um link que mudou ou sugira um site oficial que falta no catálogo.
+labels: [catálogo]
+body:
+  - type: input
+    id: orgao
+    attributes:
+      label: Órgão / site
+      placeholder: Ex.: Polícia Militar do Amazonas
+    validations:
+      required: true
+  - type: input
+    id: link
+    attributes:
+      label: Endereço correto
+      placeholder: https://…
+  - type: textarea
+    id: detalhes
+    attributes:
+      label: Detalhes
+      placeholder: O link antigo, onde encontrou o novo, etc.
