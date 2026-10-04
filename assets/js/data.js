@@ -29,7 +29,7 @@
         L('Itamaraty (Ministério das Relações Exteriores)', 'https://www.gov.br/mre/pt-br', 'Carreira diplomática (Instituto Rio Branco) e oficial de chancelaria.', ['diplomacia']),
         L('Ministério do Trabalho e Emprego', 'https://www.gov.br/trabalho-e-emprego/pt-br', 'Auditor-fiscal do trabalho.', ['auditor', 'fiscal']),
         L('EBSERH', 'https://www.gov.br/ebserh/pt-br', 'Hospitais universitários federais — saúde e área administrativa.', ['saúde', 'hospital']),
-        L('Fiocruz', 'https://portal.fiocruz.br', 'Fundação Oswaldo Cruz — pesquisa, saúde e gestão.', ['saúde', 'pesquisa']),
+        L('Fiocruz', 'https://fiocruz.br', 'Fundação Oswaldo Cruz — pesquisa, saúde e gestão.', ['saúde', 'pesquisa']),
         L('INCA', 'https://www.gov.br/inca/pt-br', 'Instituto Nacional de Câncer.', ['saúde']),
         L('Anvisa', 'https://www.gov.br/anvisa/pt-br', 'Agência Nacional de Vigilância Sanitária.', ['agência reguladora', 'saúde']),
         L('Anatel', 'https://www.gov.br/anatel/pt-br', 'Agência Nacional de Telecomunicações.', ['agência reguladora']),
@@ -67,7 +67,6 @@
         L('Instituto Consulplan', 'https://www.institutoconsulplan.org.br', 'Cartórios, tribunais e prefeituras.', ['consulplan', 'cartório']),
         L('FUNDATEC', 'https://www.fundatec.org.br', 'Forte no Rio Grande do Sul.', ['rs']),
         L('IADES', 'https://www.iades.com.br', 'Instituto Americano de Desenvolvimento — DF e órgãos federais.', ['df']),
-        L('Instituto Access', 'https://www.institutoaccess.org.br', 'Prefeituras e órgãos estaduais.', ['access']),
         L('FUMARC', 'https://www.fumarc.com.br', 'Fundação da PUC Minas — órgãos de Minas Gerais.', ['mg']),
         L('FEPESE', 'https://fepese.org.br', 'Fundação da UFSC — Santa Catarina.', ['sc']),
         L('Objetiva Concursos', 'https://www.objetivas.com.br', 'Prefeituras do Sul do país.', ['sul']),
@@ -301,17 +300,17 @@
     }),
     E('AL', 'Alagoas', 'Nordeste', 'Maceió', {
       gov: 'https://www.alagoas.al.gov.br', pm: 'https://www.pm.al.gov.br', pc: 'https://www.pc.al.gov.br',
-      sefaz: 'https://www.sefaz.al.gov.br', tce: 'https://www.tce.al.gov.br', al: 'https://www.al.al.leg.br'
+      sefaz: 'https://www.sefaz.al.gov.br', tce: 'https://tce.al.gov.br', al: 'https://www.al.al.leg.br'
     }),
     E('AP', 'Amapá', 'Norte', 'Macapá', {
       gov: 'https://www.portal.ap.gov.br', sefaz: 'https://www.sefaz.ap.gov.br', tce: 'https://www.tce.ap.gov.br', al: 'https://www.al.ap.gov.br'
     }),
     E('AM', 'Amazonas', 'Norte', 'Manaus', {
       gov: 'https://www.amazonas.am.gov.br', doe: 'https://diario.imprensaoficial.am.gov.br', pc: 'https://www.policiacivil.am.gov.br',
-      sefaz: 'https://www.sefaz.am.gov.br', tce: 'https://www.tce.am.gov.br', al: 'https://www.aleam.gov.br'
+      sefaz: 'https://www.sefaz.am.gov.br', tce: 'https://www.tceam.tc.br', al: 'https://www.aleam.gov.br'
     }),
     E('BA', 'Bahia', 'Nordeste', 'Salvador', {
-      gov: 'https://www.ba.gov.br', doe: 'https://dool.egba.ba.gov.br', pm: 'https://www.pm.ba.gov.br', pc: 'https://www.policiacivil.ba.gov.br',
+      gov: 'https://www.ba.gov.br', doe: 'https://dool.egba.ba.gov.br', pm: 'https://www.pm.ba.gov.br', pc: 'https://www.ba.gov.br/policiacivil/',
       cbm: 'https://www.cbm.ba.gov.br', sefaz: 'https://www.sefaz.ba.gov.br', tce: 'https://www.tce.ba.gov.br', al: 'https://www.al.ba.gov.br',
       dpe: 'https://www.defensoria.ba.def.br'
     }),
@@ -321,7 +320,7 @@
       tce: 'https://www.tce.ce.gov.br', al: 'https://www.al.ce.gov.br', dpe: 'https://www.defensoria.ce.def.br'
     }),
     E('DF', 'Distrito Federal', 'Centro-Oeste', 'Brasília', {
-      gov: 'https://www.df.gov.br', doe: 'https://www.dodf.df.gov.br', pm: 'https://www.pmdf.df.gov.br', pc: 'https://www.pcdf.df.gov.br',
+      gov: 'https://www.df.gov.br', doe: 'https://www.dodf.df.gov.br', pm: 'https://pmdf.df.gov.br', pc: 'https://www.pcdf.df.gov.br',
       cbm: 'https://www.cbm.df.gov.br', sefaz: 'https://www.economia.df.gov.br', tce: 'https://www.tc.df.gov.br',
       al: 'https://www.cl.df.gov.br', dpe: 'https://www.defensoria.df.gov.br',
       tj: 'https://www.tjdft.jus.br', mp: 'https://www.mpdft.mp.br'
@@ -332,19 +331,19 @@
       dpe: 'https://www.defensoria.es.def.br'
     }),
     E('GO', 'Goiás', 'Centro-Oeste', 'Goiânia', {
-      gov: 'https://www.goias.gov.br', doe: 'https://diariooficial.abc.go.gov.br', pm: 'https://www.pm.go.gov.br',
-      pc: 'https://www.policiacivil.go.gov.br', cbm: 'https://www.bombeiros.go.gov.br', sefaz: 'https://www.economia.go.gov.br',
+      gov: 'https://www.goias.gov.br', doe: 'https://diariooficial.abc.go.gov.br', pm: 'https://goias.gov.br/policiamilitar/',
+      pc: 'https://goias.gov.br/policiacivil/', cbm: 'https://www.bombeiros.go.gov.br', sefaz: 'https://goias.gov.br/economia/',
       tce: 'https://portal.tce.go.gov.br', al: 'https://portal.al.go.leg.br'
     }),
     E('MA', 'Maranhão', 'Nordeste', 'São Luís', {
       gov: 'https://www.ma.gov.br', pm: 'https://www.pm.ma.gov.br', sefaz: 'https://www.sefaz.ma.gov.br', al: 'https://www.al.ma.leg.br'
     }),
     E('MT', 'Mato Grosso', 'Centro-Oeste', 'Cuiabá', {
-      gov: 'https://www.mt.gov.br', doe: 'https://www.iomat.mt.gov.br', pc: 'https://www.pjc.mt.gov.br',
+      gov: 'https://portal.mt.gov.br', doe: 'https://www.iomat.mt.gov.br', pc: 'https://www.pjc.mt.gov.br',
       sefaz: 'https://www.sefaz.mt.gov.br', tce: 'https://www.tce.mt.gov.br', al: 'https://www.al.mt.gov.br'
     }),
     E('MS', 'Mato Grosso do Sul', 'Centro-Oeste', 'Campo Grande', {
-      gov: 'https://www.ms.gov.br', doe: 'https://www.spdo.ms.gov.br/diariodoe', pm: 'https://www.pm.ms.gov.br', pc: 'https://www.pc.ms.gov.br',
+      gov: 'https://www.ms.gov.br', doe: 'https://www.diariooficial.ms.gov.br', pm: 'https://www.pm.ms.gov.br', pc: 'https://www.pc.ms.gov.br',
       cbm: 'https://www.bombeiros.ms.gov.br', sefaz: 'https://www.sefaz.ms.gov.br', tce: 'https://www.tce.ms.gov.br', al: 'https://www.al.ms.gov.br'
     }),
     E('MG', 'Minas Gerais', 'Sudeste', 'Belo Horizonte', {
@@ -353,7 +352,7 @@
       tce: 'https://www.tce.mg.gov.br', al: 'https://www.almg.gov.br', dpe: 'https://defensoria.mg.def.br'
     }),
     E('PA', 'Pará', 'Norte', 'Belém', {
-      gov: 'https://www.pa.gov.br', doe: 'https://www.ioepa.com.br', pm: 'https://www.pm.pa.gov.br', pc: 'https://www.policiacivil.pa.gov.br',
+      gov: 'https://www.pa.gov.br', doe: 'https://www.ioepa.com.br', pm: 'https://www.pm.pa.gov.br',
       cbm: 'https://www.bombeiros.pa.gov.br', sefaz: 'https://www.sefa.pa.gov.br', tce: 'https://www.tcepa.tc.br', al: 'https://www.alepa.pa.gov.br'
     }),
     E('PB', 'Paraíba', 'Nordeste', 'João Pessoa', {
@@ -361,7 +360,7 @@
       sefaz: 'https://www.sefaz.pb.gov.br', tce: 'https://tce.pb.gov.br', al: 'https://www.al.pb.leg.br'
     }),
     E('PR', 'Paraná', 'Sul', 'Curitiba', {
-      gov: 'https://www.parana.pr.gov.br', doe: 'https://www.documentos.dioe.pr.gov.br', pm: 'https://www.pmpr.pr.gov.br',
+      gov: 'https://www.parana.pr.gov.br', doe: 'https://documentos.dioe.pr.gov.br', pm: 'https://www.pmpr.pr.gov.br',
       pc: 'https://www.policiacivil.pr.gov.br', cbm: 'https://www.bombeiros.pr.gov.br', sefaz: 'https://www.fazenda.pr.gov.br',
       tce: 'https://www1.tce.pr.gov.br', al: 'https://www.assembleia.pr.leg.br', dpe: 'https://www.defensoriapublica.pr.def.br'
     }),
@@ -372,7 +371,7 @@
     }),
     E('PI', 'Piauí', 'Nordeste', 'Teresina', {
       gov: 'https://www.pi.gov.br', doe: 'https://www.diario.pi.gov.br', pm: 'https://www.pm.pi.gov.br',
-      pc: 'https://www.policiacivil.pi.gov.br', sefaz: 'https://portal.sefaz.pi.gov.br', tce: 'https://www.tce.pi.gov.br', al: 'https://www.al.pi.leg.br'
+      pc: 'https://www.policiacivil.pi.gov.br', sefaz: 'https://portal.sefaz.pi.gov.br', tce: 'https://www.tcepi.tc.br', al: 'https://www.al.pi.leg.br'
     }),
     E('RJ', 'Rio de Janeiro', 'Sudeste', 'Rio de Janeiro', {
       gov: 'https://www.rj.gov.br', doe: 'https://www.ioerj.com.br', pm: 'https://www.pmerj.rj.gov.br',
@@ -394,16 +393,16 @@
     }),
     E('RR', 'Roraima', 'Norte', 'Boa Vista', {
       gov: 'https://portal.rr.gov.br', doe: 'https://www.imprensaoficial.rr.gov.br', pm: 'https://www.pm.rr.gov.br',
-      sefaz: 'https://www.sefaz.rr.gov.br', tce: 'https://www.tcerr.tc.br', al: 'https://www.al.rr.leg.br'
+      sefaz: 'https://www.sefaz.rr.gov.br', tce: 'https://www.tcerr.tc.br', al: 'https://al.rr.leg.br'
     }),
     E('SC', 'Santa Catarina', 'Sul', 'Florianópolis', {
-      gov: 'https://www.sc.gov.br', doe: 'https://www.doe.sea.sc.gov.br', pm: 'https://www.pm.sc.gov.br', pc: 'https://www.pc.sc.gov.br',
+      gov: 'https://www.sc.gov.br', doe: 'https://doe.sea.sc.gov.br', pm: 'https://www.pm.sc.gov.br', pc: 'https://www.pc.sc.gov.br',
       cbm: 'https://www.cbm.sc.gov.br', sefaz: 'https://www.sef.sc.gov.br', tce: 'https://www.tcesc.tc.br', al: 'https://www.alesc.sc.gov.br',
       dpe: 'https://www.defensoria.sc.def.br'
     }),
     E('SP', 'São Paulo', 'Sudeste', 'São Paulo', {
       gov: 'https://www.sp.gov.br', doe: 'https://www.doe.sp.gov.br', pm: 'https://www.policiamilitar.sp.gov.br',
-      pc: 'https://www.policiacivil.sp.gov.br', cbm: 'https://www.corpodebombeiros.sp.gov.br', sefaz: 'https://portal.fazenda.sp.gov.br',
+      pc: 'https://www.policiacivil.sp.gov.br', cbm: 'https://www.corpodebombeiros.sp.gov.br', sefaz: 'https://www.sfp.sp.gov.br/sefaz',
       tce: 'https://www.tce.sp.gov.br', al: 'https://www.al.sp.gov.br', dpe: 'https://www.defensoria.sp.def.br'
     }),
     E('SE', 'Sergipe', 'Nordeste', 'Aracaju', {
@@ -423,6 +422,7 @@
     'DF.tce': 'Tribunal de Contas do Distrito Federal (TCDF).',
     'DF.sefaz': 'Secretaria de Economia do DF (auditor fiscal da Receita do DF).',
     'GO.sefaz': 'Secretaria da Economia de Goiás.',
+    'SP.sefaz': 'Secretaria da Fazenda e Planejamento de São Paulo.',
     'PA.sefaz': 'Secretaria da Fazenda do Pará (SEFA).',
     'RN.sefaz': 'Secretaria de Tributação / Fazenda do Rio Grande do Norte.',
     'RO.sefaz': 'Secretaria de Finanças de Rondônia (SEFIN).',

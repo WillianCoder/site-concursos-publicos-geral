@@ -62,12 +62,24 @@ await Promise.all(Array.from({ length: 10 }, async () => {
 }));
 console.log('\n');
 
-const bad = results.filter((r) => !r.ok).sort((a, b) => a.label.localeCompare(b.label));
+// Erros que indicam link realmente errado (domínio inexistente, página removida,
+// certificado que não cobre o endereço). O resto costuma ser bloqueio de robôs,
+// acesso de fora do Brasil ou certificado ICP-Brasil — funciona no navegador.
+const BROKEN = new Set(['ENOTFOUND', 'ERR_TLS_CERT_ALTNAME_INVALID', 404, 410]);
+const failed = results.filter((r) => !r.ok).sort((a, b) => a.label.localeCompare(b.label));
+const broken = failed.filter((r) => BROKEN.has(r.status));
+const bad = failed.filter((r) => !BROKEN.has(r.status));
 const moved = results.filter((r) => r.ok && r.final && new URL(r.final).hostname !== new URL(r.u).hostname);
 let md = `## Verificação de links — Atlas Concursos\n\n`;
-md += `**${results.length - bad.length}/${results.length}** links responderam com sucesso.\n\n`;
+md += `**${results.length - failed.length}/${results.length}** links responderam com sucesso.\n\n`;
+if (broken.length) {
+  md += `### ❌ Quebrados — corrigir (${broken.length})\n\n| Órgão | Link | Status |\n|---|---|---|\n`;
+  md += broken.map((r) => `| ${r.label} | ${r.u} | ${r.status} |`).join('\n') + '\n\n';
+} else {
+  md += `### ✅ Nenhum link quebrado de verdade\n\n`;
+}
 if (bad.length) {
-  md += `### ❌ Com problema (${bad.length})\n\nAlguns sites do governo bloqueiam robôs ou ficam fora do ar por instantes; confira manualmente antes de remover.\n\n| Órgão | Link | Status |\n|---|---|---|\n`;
+  md += `### ⚠️ Inconclusivos (${bad.length})\n\nBloqueio de robôs (403/429), sites que não respondem a servidores fora do Brasil (timeout) ou certificados ICP-Brasil. Normalmente funcionam no navegador; confira manualmente antes de mexer.\n\n| Órgão | Link | Status |\n|---|---|---|\n`;
   md += bad.map((r) => `| ${r.label} | ${r.u} | ${r.status} |`).join('\n') + '\n\n';
 }
 if (moved.length) {
