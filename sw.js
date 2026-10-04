@@ -1,15 +1,18 @@
 /* Atlas Concursos — service worker: funciona offline depois do primeiro acesso. */
-const CACHE = 'atlas-v1';
+const CACHE = 'atlas-v2';
 const SHELL = [
   './',
   'index.html',
   'privacidade.html',
+  'termos.html',
   'manifest.webmanifest',
   'assets/css/styles.css',
   'assets/js/config.js',
   'assets/js/data.js',
   'assets/js/app.js',
   'assets/js/tools.js',
+  'assets/js/vendor/qrcode.js',
+  'assets/js/monetize.js',
   'assets/js/cloud.js',
   'assets/img/logo.svg'
 ];

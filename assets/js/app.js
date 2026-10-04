@@ -340,10 +340,12 @@
     }
   }
 
+  // Reportes vão para as issues do repositório; se ele for privado (repoUrl vazio), vão por e-mail.
   function issueUrl(title, body) {
     const repo = (CFG.repoUrl || '').replace(/\/$/, '');
-    if (!repo) return null;
-    return repo + '/issues/new?title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(body);
+    if (repo) return repo + '/issues/new?title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(body);
+    const mail = CFG.contato && CFG.contato.email;
+    return mail ? 'mailto:' + mail + '?subject=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(body) : null;
   }
 
   function download(name, text, type) {
@@ -386,11 +388,14 @@
     document.body.classList.remove('nav-open');
     if (!sameRoute) { window.scrollTo(0, 0); view.focus({ preventScroll: true }); } else window.scrollTo(0, scroll);
     if (out.after) out.after(view);
+    afterRender.forEach((fn) => { try { fn(view, current); } catch (e) { console.error(e); } });
     Ads.fill(view);
   }
 
   /* ---------- Navegação lateral ---------- */
   const extraNav = [];   // tools.js adiciona itens em "Minha área"
+  const projectNav = []; // monetize.js adiciona "Apoie" e "Anuncie"
+  const afterRender = []; // funções chamadas depois de cada página renderizada
   function renderNav() {
     const s = Store.state;
     const favCount = Object.keys(s.favs).length;
@@ -408,6 +413,11 @@
     html += link('#/meus-links', 'star', 'Meus links', favCount);
     extraNav.forEach((n) => { html += link(n.href, n.icon, n.label, n.count ? n.count(s) : null); });
     html += link('#/conta', 'user', 'Minha conta');
+    const proj = projectNav.filter((n) => !n.show || n.show());
+    if (proj.length) {
+      html += '<div class="nav-label">Projeto</div>';
+      proj.forEach((n) => { html += link(n.href, n.icon, n.label); });
+    }
     $('#nav').innerHTML = html;
 
     $$('.tabbar [data-tab]').forEach((a) => {
@@ -520,7 +530,7 @@
         recentHtml +
         adFeed() +
         '<section class="section"><div class="section-head"><h2>' + icon('target') + 'Mais acessados pelos concurseiros</h2></div><div class="cards">' + popular.map((it) => card(it)).join('') + '</div></section>' +
-        '<section class="section panel panel-pad"><span class="eyebrow">' + icon('info') + 'Dica do dia</span><p style="font-size:16px">' + esc(TIPS[new Date().getDate() % TIPS.length]) + '</p></section>',
+        '<section class="section panel panel-pad" id="tip-of-day"><span class="eyebrow">' + icon('info') + 'Dica do dia</span><p style="font-size:16px">' + esc(TIPS[new Date().getDate() % TIPS.length]) + '</p></section>',
       after(view) {
         const sel = $('#pick-uf', view);
         if (sel) sel.addEventListener('change', () => {
@@ -828,7 +838,6 @@
 
   /* ---------- Sobre ---------- */
   route(/^\/sobre$/, 'sobre', function () {
-    const repo = CFG.repoUrl || '#';
     return {
       title: 'Sobre',
       crumbs: [['Início', '#/'], ['Sobre', '#/sobre']],
@@ -839,7 +848,8 @@
           '<p>Também traz ferramentas gratuitas para o dia a dia do concurseiro: <b>Pomodoro</b> com histórico, <b>edital verticalizado</b> com revisões automáticas, <b>calculadora de nota</b> (inclusive Cebraspe), <b>planejador de estudos</b>, <b>contagem regressiva</b> para as provas e <b>bloco de notas</b>.</p>' +
           '<p><b>Importante:</b> o Atlas é um projeto independente, não é um site do governo nem de banca. Confirme sempre datas, valores e regras no edital oficial.</p>' +
           '<p><b>Privacidade:</b> seus dados ficam no seu aparelho. Nada é enviado para servidores, a menos que você ative a sincronização com sua conta Google. Veja a <a class="grad-text" href="privacidade.html">política de privacidade</a>.</p>' +
-          '<p><b>Encontrou um link quebrado ou quer sugerir um site?</b> Use o botão ⚑ em qualquer card ou contribua no <a class="grad-text" href="' + esc(repo) + '" target="_blank" rel="noopener">repositório do projeto</a>.</p>' +
+          '<p><b>Encontrou um link quebrado ou quer sugerir um site?</b> Use o botão ⚑ em qualquer card.</p>' +
+          '<p><b>Direitos:</b> o Atlas Concursos, seu código, design e a organização do catálogo são protegidos por direitos autorais. Veja os <a class="grad-text" href="termos.html">termos de uso</a>. Tem um cursinho, escola ou prefeitura e quer uma versão do Atlas? Oferecemos licenças personalizadas.</p>' +
         '</div>'
     };
   });
@@ -1082,7 +1092,7 @@
   const Atlas = window.Atlas = {
     $, $$, esc, norm, uid, icon, hydrateIcons, toast, dateKey, addDays, daysUntil, fmtDate, fmtMin, pad,
     Store, REG, route, render, current, card, mono, emptyBox, extLink, hostOf, google, download,
-    nav: extraNav, pages, accountHooks, renderNav, renderAccountChip, defaults,
+    nav: extraNav, navProject: projectNav, afterRender, pages, accountHooks, renderNav, renderAccountChip, defaults, copy,
     cloud: null
   };
 
@@ -1094,7 +1104,6 @@
     applyTheme();
     buildCatalog();
     hydrateIcons(document);
-    $('#repo-link').href = CFG.repoUrl || '#';
     Palette.init();
     bindGlobal();
     Ads.init();

@@ -1,9 +1,10 @@
 /*
  * Atlas Concursos — catálogo de sites oficiais.
+ * Copyright (c) 2026 Willian Salles. Todos os direitos reservados.
  *
  * Formato de cada item:  L(nome, url, descrição, [tags], [[subsite, url], ...])
- * Para sugerir um link novo ou corrigir um quebrado, edite este arquivo
- * e abra um Pull Request (ou use o botão "Reportar link" no site).
+ * Para sugerir um link novo ou corrigir um quebrado, use o botão "Reportar link"
+ * no site ou abra uma issue no repositório.
  */
 (function (root) {
   'use strict';

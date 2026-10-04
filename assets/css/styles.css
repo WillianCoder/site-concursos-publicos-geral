@@ -60,6 +60,7 @@
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
@@ -582,3 +583,11 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; 
 .view.no-anim > * { animation: none; }
 .i-inline { display: inline; width: 14px; height: 14px; vertical-align: -2px; }
 .nav a > span:not(.count), .search-trigger span:nth-child(2) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+
+/* ---------- Monetização ---------- */
+.pix-qr { width: min(280px, 100%); aspect-ratio: 1; background: #fff; border-radius: 16px; padding: 10px; }
+.pix-qr svg { width: 100%; height: 100%; }
+.card.sponsor { border-color: color-mix(in srgb, var(--c2) 35%, var(--border)); }
+.rules { margin: 6px 0 0; padding-left: 20px; color: var(--muted); display: flex; flex-direction: column; gap: 6px; }
+.rules b { color: var(--text); }
+.pro-box { background: radial-gradient(420px 200px at 100% 0%, rgba(139, 92, 246, .2), transparent 70%), var(--panel); }

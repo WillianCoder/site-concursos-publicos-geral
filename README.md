@@ -21,7 +21,7 @@ O Atlas Concursos reúne os endereços oficiais que todo concurseiro precisa: ba
 | **Bloco de notas** | Salvo automaticamente, exporta `.txt`. |
 | **Minha conta** | Perfil, meu estado, meta diária, backup/restauração e login na nuvem (opcional). |
 
-Mais: tema escuro e claro, layout para celular com barra inferior, funciona offline (PWA, pode ser instalado como aplicativo), sem rastreadores por padrão.
+Mais: tema escuro e claro, layout para celular com barra inferior, funciona offline (PWA, pode ser instalado como aplicativo), sem rastreadores por padrão, termos de uso e política de privacidade.
 
 ## Como funciona a "conta" do usuário
 
@@ -49,6 +49,19 @@ Mais: tema escuro e claro, layout para celular com barra inferior, funciona offl
 5. Copie a configuração do app (apiKey, authDomain, projectId, appId) para `firebase` em `assets/js/config.js`.
 
 > A `apiKey` do Firebase para web é pública por design; a segurança vem das regras acima.
+
+## Monetização com preço justo
+
+Tudo fica em `assets/js/config.js` e só aparece no site depois de preenchido:
+
+| Bloco | O que faz | O que preencher |
+|---|---|---|
+| **Apoie o Atlas** (`#/apoie`) | Doação por Pix com QR Code e "copia e cola" gerados no navegador (padrão BR Code do Banco Central), com valores sugeridos de R$ 5 a R$ 50 ou valor livre. | `pix.chave`, `pix.nome`, `pix.cidade` |
+| **Anuncie no Atlas** (`#/anuncie`) | Página comercial com pacotes de patrocínio a preço fixo (a partir de R$ 29), regras de transparência e botão de WhatsApp/e-mail. | `contato.whatsapp` e/ou `contato.email`; preços em `pacotes` |
+| **Cards "Patrocinado"** | Aparecem na página inicial, em categorias, nos hubs dos estados ou em Ferramentas e somem sozinhos na data final. | `patrocinios` |
+| **Dica patrocinada** | Substitui a "Dica do dia" num dia específico. | `dicasPatrocinadas` |
+| **Recomendados (afiliados)** | Livros, cursos e materiais com link de afiliado, sempre com aviso de transparência. | `recomendados` |
+| **Lista de espera do Atlas Pro** | Chamada para um futuro plano pago (alertas de edital). | `listaEsperaPro` (link de um Google Forms) |
 
 ## Propagandas (Google AdSense)
 
@@ -81,7 +94,7 @@ python3 -m http.server 8000
 - Todos os sites ficam em [`assets/js/data.js`](assets/js/data.js), em um formato simples de editar.
 - O workflow **Verificar links do catálogo** roda toda segunda-feira (e em PRs que mudam o catálogo) e publica um relatório com os links que não responderam. Alguns sites do governo bloqueiam robôs — confira manualmente antes de remover.
 - Rodar localmente: `node scripts/check-links.mjs` (ou `--list` para só listar).
-- Os visitantes podem reportar links quebrados pelo botão ⚑ de cada card, que abre uma issue já preenchida.
+- Os visitantes podem reportar links quebrados pelo botão ⚑ de cada card, que abre uma issue já preenchida (ou um e-mail, se `repoUrl` estiver vazio).
 
 ## Estrutura
 
@@ -93,7 +106,10 @@ assets/js/config.js     configurações: anúncios, Firebase, repositório
 assets/js/data.js       catálogo de sites oficiais
 assets/js/app.js        núcleo: conta, rotas, busca, catálogo, estados, links, anúncios
 assets/js/tools.js      ferramentas de estudo
+assets/js/monetize.js   Pix, página de anúncios, patrocínios e afiliados
 assets/js/cloud.js      sincronização opcional com Firebase
+assets/js/vendor/       QR Code Generator (MIT, Kazuhiko Arase)
+termos.html             termos de uso
 sw.js                   funcionamento offline
 scripts/check-links.mjs verificador de links
 ```
@@ -102,4 +118,6 @@ scripts/check-links.mjs verificador de links
 
 Projeto independente, sem vínculo com órgãos públicos ou bancas. Sempre confirme datas, valores e regras no edital oficial.
 
-Licença MIT.
+## Direitos
+
+© 2026 Willian Salles. **Todos os direitos reservados** — veja [LICENSE](LICENSE) e os [Termos de Uso](termos.html). Não é permitido copiar, republicar ou explorar comercialmente o código, o design ou o catálogo sem autorização por escrito. Para licenças e versões personalizadas, entre em contato.
