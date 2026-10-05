@@ -93,7 +93,10 @@
     link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
     sparkle: '<path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 17v4M17 19h4"/>',
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/>',
-    install: '<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M12 8v7M9 12l3 3 3-3"/>'
+    install: '<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M12 8v7M9 12l3 3 3-3"/>',
+    bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+    chat: '<path d="M4 20l1.4-4A8 8 0 1 1 8.5 19z"/><path d="M9 10.5c.5 2 2 3.5 4 4l1.2-1.2 2 .8-.4 1.6c-3.8 0-7.4-3.6-7.4-7.4l1.6-.4.8 2z"/>',
+    pix: '<path d="M12 3l9 9-9 9-9-9z"/><path d="M8 8l4 4 4-4M8 16l4-4 4 4"/>'
   };
   const icon = (name, cls) => '<svg class="i ' + (cls || '') + '" viewBox="0 0 24 24" aria-hidden="true">' + (ICONS[name] || ICONS.link) + '</svg>';
   const hydrateIcons = (root) => $$('[data-icon]', root).forEach((el) => { if (!el.firstElementChild) el.innerHTML = icon(el.dataset.icon); });
@@ -459,7 +462,11 @@
     const avatar = cloudUser && cloudUser.photoURL
       ? '<span class="avatar"><img src="' + esc(cloudUser.photoURL) + '" alt="" referrerpolicy="no-referrer"></span>'
       : '<span class="avatar">' + (initials ? esc(initials) : icon('user')) + '</span>';
-    $('#account-chip').innerHTML = avatar + '<span class="name">' + esc(nome ? nome.split(' ')[0] : 'Minha conta') + '</span>';
+    // Com contas ativadas e ninguém conectado, o atalho vira "Entrar".
+    const guest = Atlas.cloud && Atlas.cloud.enabled && Atlas.cloud.ready && !cloudUser;
+    const chip = $('#account-chip');
+    chip.setAttribute('href', guest ? '#/entrar' : '#/conta');
+    chip.innerHTML = avatar + '<span class="name">' + esc(guest ? 'Entrar' : nome ? nome.split(' ')[0] : 'Minha conta') + '</span>';
   }
 
   /* =========================================================
@@ -531,11 +538,28 @@
 
     const popular = POPULAR.map((u) => REG.get(u)).filter(Boolean);
 
+    // Celular: os 6 serviços principais logo no topo; o resto fica em "Ver mais".
+    const SVC = Atlas.services;
+    const open = Atlas.radarOpen ? Atlas.radarOpen() : 0;
+    const nd = next ? daysUntil(next.data) : null;
+    const svc = (href, ic, t, sub, extra) => '<a class="svc' + (extra && extra.cls ? ' ' + extra.cls : '') + '" href="' + href + '"><span class="svc-icon">' + icon(ic) + '</span>' +
+      '<span class="svc-text"><b>' + esc(t) + '</b><span>' + sub + '</span></span>' + (extra && extra.badge ? '<span class="svc-badge">' + esc(extra.badge) + '</span>' : '') + '</a>';
+    const services = '<div class="m-services">' +
+      svc('#/radar', 'radar', 'Inscrições abertas', open ? '<b class="ok-text">' + open + '</b> concursos com inscrição aberta hoje' : 'Editais e inscrições abertas', { cls: 'wide', badge: open ? String(open) : '' }) +
+      (SVC && SVC.active()
+        ? svc('#/pesquisa-diario', 'newspaper', 'Meu nome no Diário Oficial', 'Nós procuramos para você', { cls: 'featured', badge: SVC.brl(SVC.price()).replace(',00', '') })
+        : svc('#/meu-nome', 'newspaper', 'Meu nome no Diário Oficial', 'Procure pelo nome, RG ou inscrição')) +
+      svc('#/concursos', 'calendar', 'Minha próxima prova', next ? (nd === 0 ? '<b>É hoje!</b> ' : '<b>' + nd + ' dias</b> · ') + esc(next.nome) : 'Cadastre e receba lembrete no WhatsApp') +
+      svc(me ? '#/uf/' + me.uf : '#/estados', 'map', 'Sites por estado', me ? 'Meu estado: ' + esc(me.nome) : 'SP, RJ, MG e todos os estados') +
+      svc('#/ferramentas/pomodoro', 'clock', 'Estudo de hoje', fmtMin(studied) + ' de ' + fmtMin(goal) + (due ? ' · ' + due + ' revisões' : '')) +
+      svc('#/meus-links', 'star', 'Links salvos', favs ? favs + ' sites salvos' : 'Salve os sites que você mais usa') +
+    '</div>';
+
     return {
       title: 'Início',
       crumbs: [['Início', '#/']],
       html:
-        '<section class="hero">' +
+        '<div class="home-lead"><section class="hero">' +
           '<span class="eyebrow">' + icon('sparkle') + (nome ? 'Olá, ' + esc(nome) + '!' : 'Gratuito para todo concurseiro') + '</span>' +
           '<h1>Todos os sites de <span class="grad-text">concursos públicos</span> do Brasil em um só lugar.</h1>' +
           '<p class="lead">Bancas, diários oficiais, polícias, tribunais e órgãos dos 27 estados — organizados, pesquisáveis e com ferramentas de estudo grátis.</p>' +
@@ -548,14 +572,20 @@
             '<div class="stat"><b>100%</b><span>gratuito</span></div>' +
           '</div>' +
         '</section>' +
+        services + '</div>' +
+        '<button class="btn home-more-btn" id="home-more-btn" type="button">' + icon('grid') + 'Ver mais: estudo, categorias e sites populares</button>' +
+        '<div class="home-more" id="home-more">' +
         widgets +
         myState +
         '<section class="section"><div class="section-head"><h2>' + icon('grid') + 'Explore por categoria</h2><a class="link-more" href="#/explorar">Ver todos os sites ' + icon('chevron') + '</a></div><div class="tiles">' + tiles + '</div></section>' +
         recentHtml +
         adFeed() +
         '<section class="section"><div class="section-head"><h2>' + icon('target') + 'Mais acessados pelos concurseiros</h2></div><div class="cards">' + popular.map((it) => card(it)).join('') + '</div></section>' +
-        '<section class="section panel panel-pad" id="tip-of-day"><span class="eyebrow">' + icon('info') + 'Dica do dia</span><p style="font-size:16px">' + esc(TIPS[new Date().getDate() % TIPS.length]) + '</p></section>',
+        '<section class="section panel panel-pad" id="tip-of-day"><span class="eyebrow">' + icon('info') + 'Dica do dia</span><p style="font-size:16px">' + esc(TIPS[new Date().getDate() % TIPS.length]) + '</p></section>' +
+        '</div>',
       after(view) {
+        const more = $('#home-more-btn', view);
+        more.addEventListener('click', () => { $('#home-more', view).classList.add('open'); more.remove(); });
         const sel = $('#pick-uf', view);
         if (sel) sel.addEventListener('change', () => {
           if (!sel.value) return;
@@ -798,7 +828,7 @@
       crumbs: [['Início', '#/'], ['Minha conta', '#/conta']],
       html:
         '<div class="page-head"><div><span class="eyebrow">' + icon('user') + 'Perfil</span><h1>Minha conta</h1>' +
-        '<p>Seus links, concursos e estudos ficam guardados neste aparelho automaticamente — sem cadastro e sem custo.</p></div></div>' +
+        '<p>Seus links, concursos e estudos ficam guardados neste aparelho automaticamente. Com a conta grátis, ficam também na nuvem, em todos os seus aparelhos.</p></div></div>' +
         '<div class="kpis">' + counts.map((c) => '<div class="kpi"><b>' + c[0] + '</b><span>' + c[1] + '</span></div>').join('') + '</div>' +
         '<div class="tool-layout section">' +
           '<form class="panel panel-pad" id="profile-form" style="display:flex;flex-direction:column;gap:12px">' +
@@ -873,7 +903,7 @@
           '<p>Quem estuda para concurso perde horas procurando: qual é o site da banca? Onde sai o edital da PM? Qual o endereço do Diário Oficial do meu estado? O Atlas reúne <b>todos esses endereços oficiais em um só lugar</b>, organizados por categoria e por estado, com busca instantânea.</p>' +
           '<p>Também traz ferramentas gratuitas para o dia a dia do concurseiro: <b>Pomodoro</b> com histórico, <b>edital verticalizado</b> com revisões automáticas, <b>calculadora de nota</b> (inclusive Cebraspe), <b>planejador de estudos</b>, <b>contagem regressiva</b> para as provas e <b>bloco de notas</b>.</p>' +
           '<p><b>Importante:</b> o Atlas é um projeto independente, não é um site do governo nem de banca. Confirme sempre datas, valores e regras no edital oficial.</p>' +
-          '<p><b>Privacidade:</b> seus dados ficam no seu aparelho. Nada é enviado para servidores, a menos que você ative a sincronização com sua conta Google. Veja a <a class="grad-text" href="privacidade.html">política de privacidade</a>.</p>' +
+          '<p><b>Privacidade:</b> seus dados ficam no seu aparelho. Nada é enviado para servidores, a menos que você crie sua conta Atlas para sincronizar entre aparelhos ou faça um pedido. Veja a <a class="grad-text" href="privacidade.html">política de privacidade</a>.</p>' +
           '<p><b>Encontrou um link quebrado ou quer sugerir um site?</b> Use o botão ⚑ em qualquer card.</p>' +
           '<p><b>Direitos:</b> o Atlas Concursos, seu código, design e a organização do catálogo são protegidos por direitos autorais. Veja os <a class="grad-text" href="termos.html">termos de uso</a>. Tem um cursinho, escola ou prefeitura e quer uma versão do Atlas? Oferecemos licenças personalizadas.</p>' +
         '</div>'

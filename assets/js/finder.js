@@ -79,8 +79,9 @@
       title: 'Meu nome no Diário Oficial',
       crumbs: [['Início', '#/'], ['Meu nome no Diário Oficial', '#/meu-nome']],
       html:
-        '<div class="page-head"><div><span class="eyebrow">' + icon('search') + 'Busca avançada</span><h1>Encontre seu nome no Diário Oficial</h1>' +
+        '<div class="page-head"><div><span class="eyebrow">' + icon('search') + 'Busca avançada grátis</span><h1>Encontre seu nome no Diário Oficial</h1>' +
         '<p>Convocação, resultado, exame médico, nomeação: tudo sai em diário oficial, em PDFs enormes. Informe seus dados e o Atlas monta as buscas certas em cada lugar, já com os formatos que os diários usam.</p></div></div>' +
+        (A.services ? A.services.promo() : '') +
         '<div class="finder">' +
           '<form class="panel panel-pad finder-form" id="finder-form" autocomplete="off">' +
             '<label class="field full">Nome completo<input class="input" id="f-nome" name="nome" value="' + esc(form.nome) + '" placeholder="Como está no documento" autocomplete="name"></label>' +

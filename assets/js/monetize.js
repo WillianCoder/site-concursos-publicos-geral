@@ -30,12 +30,15 @@
     return crc.toString(16).toUpperCase().padStart(4, '0');
   }
   const ascii = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9 .\-]/g, '').trim();
-  function pixPayload(valor) {
-    const conta = tlv('00', 'br.gov.bcb.pix') + tlv('01', String(pix.chave).trim()) + tlv('02', 'Apoio Atlas Concursos');
+  // opts.txid: identificador que aparece no extrato (ex.: código do pedido); opts.info: descrição.
+  function pixPayload(valor, opts) {
+    opts = opts || {};
+    const txid = String(opts.txid || 'ATLAS').replace(/[^A-Za-z0-9]/g, '').slice(0, 25) || 'ATLAS';
+    const conta = tlv('00', 'br.gov.bcb.pix') + tlv('01', String(pix.chave).trim()) + tlv('02', ascii(opts.info || 'Apoio Atlas Concursos').slice(0, 40));
     const p = tlv('00', '01') + tlv('26', conta) + tlv('52', '0000') + tlv('53', '986') +
       (valor > 0 ? tlv('54', Number(valor).toFixed(2)) : '') +
       tlv('58', 'BR') + tlv('59', ascii(pix.nome).toUpperCase().slice(0, 25)) + tlv('60', ascii(pix.cidade).toUpperCase().slice(0, 15)) +
-      tlv('62', tlv('05', 'ATLAS')) + '6304';
+      tlv('62', tlv('05', txid)) + '6304';
     return p + crc16(p);
   }
   function qrSvg(text) {
@@ -45,7 +48,7 @@
     q.make();
     return q.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
   }
-  A.pix = { payload: pixPayload, crc16 };
+  A.pix = { payload: pixPayload, crc16, qr: qrSvg, ready: hasPix, nome: () => pix.nome };
 
   /* =========================================================
      Navegação, busca e rodapé
@@ -68,9 +71,10 @@
   /* =========================================================
      Cards patrocinados e recomendações
      ========================================================= */
-  const ativos = () => (CFG.patrocinios || []).filter((p) => p && A.safeUrl(p.url) && (!p.ate || p.ate >= dateKey()));
-  const sponsorCard = (p) =>
-    '<article class="card sponsor">' +
+  // Ativo = dentro do período contratado (início e fim, inclusive).
+  const ativos = () => (CFG.patrocinios || []).filter((p) => p && A.safeUrl(p.url) && (!p.inicio || p.inicio <= dateKey()) && (!p.ate || p.ate >= dateKey()));
+  const sponsorCard = (p, preview) =>
+    '<article class="card sponsor' + (preview ? ' sponsor-preview' : '') + '">' +
       '<div class="card-top">' + A.mono(p.titulo, p.url) +
         '<div class="card-title"><h3>' + esc(p.titulo) + '</h3><span class="domain">' + esc(A.hostOf(p.url)) + '</span></div>' +
         '<span class="tag">Patrocinado</span></div>' +
@@ -102,18 +106,53 @@
     return '';
   }
 
+  /* Prévia: o Painel grava o anúncio em teste no navegador do administrador
+     (localStorage, válido por 30 minutos) e abre o site; só ele vê. */
+  const PREVIEW = 'atlas:preview-ad';
+  function previewAd() {
+    try {
+      const p = JSON.parse(localStorage.getItem(PREVIEW) || 'null');
+      if (p && p.exp > Date.now() && p.ad && p.ad.titulo) return p.ad;
+      if (p) localStorage.removeItem(PREVIEW);
+    } catch (e) {}
+    return null;
+  }
+
+  // Posições: topo (logo no início), meio (no meio do conteúdo) ou fim (antes do rodapé).
+  function placeSponsors(view, key, pos, list, preview) {
+    if (!list.length) return;
+    const html = '<section class="section" data-monet="sponsor" data-pos="' + pos + '"><div class="section-head"><h2>' + icon('sparkle') + 'Parceiros</h2><a class="link-more" href="#/anuncie">Anuncie aqui</a></div><div class="cards">' +
+      list.map((p) => sponsorCard(p, p === preview)).join('') + '</div></section>';
+    if (pos === 'fim') {
+      const tip = key === 'home' ? $('#tip-of-day', view) : null;
+      if (tip) tip.insertAdjacentHTML('beforebegin', html); else view.insertAdjacentHTML('beforeend', html);
+      return;
+    }
+    if (pos === 'meio') {
+      const box = key === 'home' ? ($('.home-more', view) || view) : view;
+      const secs = Array.from(box.children).filter((el) => !el.matches('[data-monet], .page-head, .preview-bar, .home-lead, .home-more-btn, script, ins'));
+      const mid = secs[Math.floor(secs.length / 2)];
+      if (mid) { mid.insertAdjacentHTML('beforebegin', html); return; }
+    }
+    const anchor = key === 'home' ? $('.home-lead', view) : $('.page-head', view);
+    if (anchor) anchor.insertAdjacentHTML('afterend', html);
+    else view.insertAdjacentHTML('afterbegin', html);
+  }
+
   A.afterRender.push((view, cur) => {
     footerLinks();
     const key = placementKey(cur);
+    const prev = previewAd();
+    if (prev) {
+      view.insertAdjacentHTML('afterbegin', '<div class="preview-bar">' + icon('sparkle') + '<span>Prévia do anúncio "' + esc(prev.titulo) + '" — só você vê isto.</span><button class="btn btn-sm" type="button" id="preview-exit">Sair da prévia</button></div>');
+      $('#preview-exit', view).addEventListener('click', () => { try { localStorage.removeItem(PREVIEW); } catch (e) {} A.render(); });
+    }
     if (!key) return;
 
-    const sp = ativos().filter((p) => (p.onde || []).includes(key));
-    if (sp.length) {
-      const html = '<section class="section" data-monet="sponsor"><div class="section-head"><h2>' + icon('sparkle') + 'Parceiros</h2><a class="link-more" href="#/anuncie">Anuncie aqui</a></div><div class="cards">' + sp.map(sponsorCard).join('') + '</div></section>';
-      const anchor = key === 'home' ? $('.widgets', view) : $('.page-head', view);
-      if (anchor) anchor.insertAdjacentHTML('afterend', html);
-      else view.insertAdjacentHTML('afterbegin', html);
-    }
+    const here = (p) => (p.onde || []).includes(key);
+    const sp = ativos().filter(here);
+    if (prev && here(prev)) sp.unshift(prev);
+    ['topo', 'meio', 'fim'].forEach((pos) => placeSponsors(view, key, pos, sp.filter((p) => (p.posicao || 'topo') === pos), prev));
 
     if (key === 'home' || key === 'ferramentas') {
       const rec = recomendadosHtml();
