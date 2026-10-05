@@ -61,6 +61,33 @@
       'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
   }
 
+  /* ---------- Lembretes no WhatsApp (servicos.js grava no Firestore) ---------- */
+  const SV = A.services || { AVISOS: [] };
+  const WA_ON = !!(A.services && (A.services.whatsapp() || (A.cloud && A.cloud.enabled)));
+  const normWhats = (v) => { let d = String(v || '').replace(/\D/g, ''); if (d.length === 10 || d.length === 11) d = '55' + d; return /^55\d{10,11}$/.test(d) ? d : ''; };
+  const fmtWhats = (d) => { const m = String(d || '').match(/^55(\d{2})(\d{4,5})(\d{4})$/); return m ? '(' + m[1] + ') ' + m[2] + '-' + m[3] : ''; };
+  function myWhats() {
+    const p = A.cloud && A.cloud.profile;
+    const ex = Store.state.exams.find((e) => e.lembrete && e.lembrete.whatsapp);
+    return fmtWhats((p && p.whatsapp) || (ex && ex.lembrete.whatsapp) || '');
+  }
+  // Ativa o lembrete: com conta, grava na nuvem; sem conta ativada, manda o pedido pelo WhatsApp.
+  async function activateReminder(exam) {
+    try {
+      const r = await SV.syncReminder(exam);
+      if (r === 'cloud') toast('🔔 Lembretes ativados! Você vai receber os avisos no WhatsApp.');
+      else if (r === 'whatsapp') toast('Envie a mensagem no WhatsApp para confirmar seus lembretes.');
+      else if (r === 'login') {
+        Store.update((s) => { const x = s.exams.find((y) => y.id === exam.id); if (x) x.lembrete.pendente = true; });
+        toast('Entre ou crie sua conta grátis para ativar os lembretes no WhatsApp.');
+        A.cloud.requireLogin('#/concursos', 'cadastro');
+      }
+    } catch (e) {
+      console.error(e);
+      toast('Não foi possível ativar os lembretes agora. Tente de novo pelo sino do concurso.');
+    }
+  }
+
   route(/^\/concursos$/, 'concursos', function () {
     const s = Store.state;
     const sorted = s.exams.slice().sort((a, b) => (a.data || '9999').localeCompare(b.data || '9999'));
@@ -76,15 +103,18 @@
       if (insc !== null && insc >= 0 && ['Interessado', 'Inscrito'].includes(e.status)) {
         inscB = '<span class="badge ' + (insc <= 3 ? 'danger' : 'warn') + '">' + (e.status === 'Inscrito' ? 'Pagamento/inscrição' : 'Inscrições') + ' até ' + fmtDate(e.inscricao) + '</span>';
       }
+      const lem = e.lembrete && e.lembrete.on
+        ? '<span class="badge ok" title="' + esc((e.lembrete.avisos || []).map((k) => (SV.AVISOS.find((a) => a[0] === k) || [k, k])[1]).join(' · ')) + '">' + icon('bell') + (e.lembrete.pendente ? 'WhatsApp: entre na conta para ativar' : 'Lembrete no WhatsApp') + '</span>' : '';
       return '<article class="card" data-id="' + e.id + '">' +
         '<div class="card-top">' + A.mono(e.nome, e.id) + '<div class="card-title"><h3>' + esc(e.nome) + '</h3><span class="domain">' + esc([e.cargo, e.banca].filter(Boolean).join(' · ') || 'Concurso') + '</span></div>' +
           '<button class="icon-btn" data-ex="del" title="Excluir" aria-label="Excluir">' + icon('trash') + '</button></div>' +
-        '<div class="subs">' + countdown + inscB + '</div>' +
-        (e.data ? '<p class="desc">' + icon('calendar', 'i-inline') + ' Prova em ' + fmtDate(e.data) + '</p>' : '') +
+        '<div class="subs">' + countdown + inscB + lem + '</div>' +
+        (e.data ? '<p class="desc">' + icon('calendar', 'i-inline') + ' Prova em ' + fmtDate(e.data) + (e.resultado ? ' · resultado em ' + fmtDate(e.resultado) : '') + '</p>' : '') +
         '<div class="card-actions">' +
           '<select class="select" data-ex="status" style="flex:1;padding:7px 10px">' + STATUS.map((st) => '<option' + (st === e.status ? ' selected' : '') + '>' + st + '</option>').join('') + '</select>' +
           (e.edital ? A.extLink(e.edital, 'icon-btn', icon('external')).replace('<a ', '<a title="Abrir edital" ') : '') +
           (e.data ? '<button class="icon-btn" data-ex="ics" title="Adicionar ao calendário do celular" aria-label="Adicionar ao calendário">' + icon('calendar') + '</button>' : '') +
+          (WA_ON ? '<button class="icon-btn' + (e.lembrete && e.lembrete.on ? ' fav on' : '') + '" data-ex="whats" title="' + (e.lembrete && e.lembrete.on ? 'Desligar lembretes no WhatsApp' : 'Receber lembretes no WhatsApp') + '" aria-label="Lembretes no WhatsApp">' + icon('bell') + '</button>' : '') +
         '</div></article>';
     };
 
@@ -102,7 +132,14 @@
             '<label class="field">Link do edital<input class="input" name="edital" placeholder="https://…" inputmode="url"></label>' +
             '<label class="field">Inscrições até<input class="input" name="inscricao" type="date"></label>' +
             '<label class="field">Data da prova<input class="input" name="data" type="date"></label>' +
+            '<label class="field"><span>Resultado previsto <span class="muted">(opcional)</span></span><input class="input" name="resultado" type="date"></label>' +
             '<label class="field">Situação<select class="select" name="status">' + STATUS.map((st) => '<option>' + st + '</option>').join('') + '</select></label>' +
+            (WA_ON ? '<fieldset class="whats-box full"><label class="check"><input type="checkbox" name="lembrete" id="ex-lem"> ' + icon('bell') + ' <b>Quero receber lembretes desta prova no meu WhatsApp</b></label>' +
+              '<div class="whats-opts" id="ex-lem-opts" hidden>' +
+                '<label class="field">Meu WhatsApp<input class="input" name="whatsapp" type="tel" inputmode="tel" placeholder="(11) 91234-5678" value="' + esc(myWhats()) + '"></label>' +
+                '<div class="field"><span>Avisar quando</span><div class="check-list">' + SV.AVISOS.map((a) => '<label class="check"><input type="checkbox" name="av_' + a[0] + '"' + (a[0] !== 'res' ? ' checked' : '') + '> ' + esc(a[1]) + '</label>').join('') + '</div></div>' +
+                '<p class="muted small">Você pode desligar quando quiser tocando no sino do concurso. Seu número é usado só para os lembretes.</p>' +
+              '</div></fieldset>' : '') +
             '<datalist id="bancas">' + window.ATLAS_DATA.categorias.find((c) => c.id === 'bancas').itens.map((b) => '<option value="' + esc(b.n.split(' (')[0].split(' — ')[0]) + '">').join('') + '</datalist>' +
             '<div style="display:flex;align-items:flex-end"><button class="btn btn-primary" type="submit">' + icon('plus') + 'Adicionar</button></div>' +
           '</form></details>' +
@@ -111,14 +148,26 @@
         '</section>' +
         (past.length ? '<section class="section"><div class="section-head"><h2>' + icon('check') + 'Encerrados</h2></div><div class="cards">' + past.map(examCard).join('') + '</div></section>' : ''),
       after(view) {
+        const lemBox = $('#ex-lem', view);
+        if (lemBox) lemBox.addEventListener('change', () => { $('#ex-lem-opts', view).hidden = !lemBox.checked; });
         $('#exam-form', view).addEventListener('submit', (ev) => {
           ev.preventDefault();
           const f = Object.fromEntries(new FormData(ev.target));
           let edital = (f.edital || '').trim();
           if (edital && !/^https?:\/\//i.test(edital)) edital = 'https://' + edital;
           edital = A.safeUrl(edital);
-          Store.update((s) => s.exams.push({ id: uid(), nome: f.nome.trim(), cargo: f.cargo.trim(), banca: f.banca.trim(), edital, inscricao: f.inscricao, data: f.data, status: f.status }));
+          const exam = { id: uid(), nome: f.nome.trim(), cargo: f.cargo.trim(), banca: f.banca.trim(), edital, inscricao: f.inscricao, data: f.data, resultado: f.resultado || '', status: f.status };
+          if (f.lembrete) {
+            const w = normWhats(f.whatsapp);
+            if (!w) { toast('Informe seu WhatsApp com DDD para receber os lembretes.'); return; }
+            const avisos = SV.AVISOS.map((a) => a[0]).filter((k) => f['av_' + k]);
+            if (!avisos.length) { toast('Escolha pelo menos um aviso.'); return; }
+            if (!exam.inscricao && !exam.data && !exam.resultado) { toast('Informe a data das inscrições, da prova ou do resultado para receber lembretes.'); return; }
+            exam.lembrete = { on: true, whatsapp: w, avisos };
+          }
+          Store.update((s) => s.exams.push(exam));
           toast('Concurso adicionado!');
+          if (exam.lembrete) activateReminder(exam);
           render();
         });
         view.addEventListener('click', (ev) => {
@@ -127,7 +176,22 @@
           const e = Store.state.exams.find((x) => x.id === id);
           if (b.dataset.ex === 'del') {
             if (!confirm('Excluir "' + e.nome + '"?')) return;
+            if (e.lembrete && e.lembrete.on) SV.removeReminder(e).catch(() => {});
             Store.update((s) => { s.exams = s.exams.filter((x) => x.id !== id); });
+            render();
+          } else if (b.dataset.ex === 'whats') {
+            if (e.lembrete && e.lembrete.on) {
+              SV.removeReminder(e).catch(() => {});
+              Store.update((s) => { s.exams.find((x) => x.id === id).lembrete.on = false; });
+              toast('Lembretes no WhatsApp desligados para este concurso.');
+              render();
+              return;
+            }
+            if (!e.inscricao && !e.data && !e.resultado) { toast('Este concurso não tem datas. Exclua e cadastre de novo com as datas.'); return; }
+            const w = normWhats(prompt('Seu WhatsApp com DDD para receber os lembretes:', myWhats()) || '');
+            if (!w) { toast('WhatsApp inválido. Use DDD + número, ex.: (11) 91234-5678.'); return; }
+            Store.update((s) => { s.exams.find((x) => x.id === id).lembrete = { on: true, whatsapp: w, avisos: ['insc', 'p7', 'p1'].concat(e.resultado ? ['res'] : []) }; });
+            activateReminder(Store.state.exams.find((x) => x.id === id));
             render();
           } else if (b.dataset.ex === 'ics') {
             A.download('prova-' + e.nome.replace(/[^\w-]+/g, '-').toLowerCase() + '.ics', ics(e), 'text/calendar');

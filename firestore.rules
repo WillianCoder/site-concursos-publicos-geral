@@ -1,0 +1,30 @@
+// Regras de segurança do Firestore do Atlas Concursos.
+// O Painel do Administrador (aba Avançado) gera este texto já com o seu e-mail:
+// copie de lá e cole em Firebase → Firestore Database → Regras → Publicar.
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isAdmin() { return signedIn() && request.auth.token.email == 'SEU-EMAIL-DE-ADMIN@exemplo.com' && request.auth.token.email_verified == true; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+
+    // Dados sincronizados do aparelho: só o dono.
+    match /users/{uid} { allow read, write: if isOwner(uid); }
+
+    // Perfil (nome, e-mail, WhatsApp): o dono e o administrador.
+    match /perfis/{uid} { allow read, write: if isOwner(uid) || isAdmin(); }
+
+    // Pedidos: o cliente cria e lê os seus; só o administrador muda a situação.
+    match /pedidos/{id} {
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.status == 'aguardando';
+      allow read: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+
+    // Lembretes no WhatsApp: o dono e o administrador.
+    match /lembretes/{id} {
+      allow create, update: if isAdmin() || (signedIn() && request.resource.data.uid == request.auth.uid && (resource == null || resource.data.uid == request.auth.uid));
+      allow read, delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+    }
+  }
+}

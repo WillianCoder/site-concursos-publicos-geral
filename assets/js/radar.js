@@ -32,6 +32,7 @@
   const novidades = (R.items || []).filter((x) => valid(x) && daysUntil(x.d) >= -7);
   const confirmed = () => (A.agenda ? A.agenda.abertas : []);
   const totalOpen = () => confirmed().length + robotOpen.length;
+  A.radarOpen = totalOpen;
 
   // Estados com mais procura primeiro.
   const UF_ORDER = ['SP', 'RJ', 'MG', 'BA', 'PR', 'RS', 'PE', 'CE', 'DF', 'GO', 'SC', 'ES', 'PA', 'AM', 'MA', 'PB', 'RN', 'AL', 'PI', 'MT', 'MS', 'SE', 'RO', 'TO', 'AC', 'AP', 'RR'];

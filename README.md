@@ -30,34 +30,33 @@ Mais: tema escuro e claro, layout para celular com barra inferior, funciona offl
 
 ## Como funciona a "conta" do usuário
 
-- **Sem configurar nada:** tudo é salvo no navegador do usuário (`localStorage`). Não precisa de cadastro nem de servidor. Para usar em outro aparelho, o usuário baixa o backup e restaura no outro dispositivo.
-- **Com o login Google (opcional e gratuito):** quando você preenche o Firebase no `config.js`, aparece o botão **Entrar com Google** em *Minha conta* e os dados sincronizam entre celular e computador.
+- **Sem configurar nada:** tudo é salvo no navegador do usuário (`localStorage`). Não precisa de cadastro nem de servidor. Os pedidos do serviço pago e os pedidos de lembrete vão direto para o WhatsApp do atendimento (`contato.whatsapp`).
+- **Com contas (Firebase, grátis):** aparece **Entrar / Criar conta** com **e-mail e senha** (e Google como opção). Os dados sincronizam entre aparelhos e o Painel passa a mostrar **Usuários**, **Pedidos** e **Lembretes de hoje**.
 
-### Ativar o login na nuvem (Firebase, plano gratuito)
+Coleções do Firestore: `users/{uid}` (dados do aparelho, só o dono), `perfis/{uid}` (nome, e-mail, WhatsApp, consentimentos), `pedidos/{código}` (serviço pago) e `lembretes/{uid_concurso}` (lembretes de prova). As regras de segurança estão em [`firestore.rules`](firestore.rules); o Painel (aba *Avançado*) gera o texto pronto com o seu e-mail de administrador.
 
-1. Acesse <https://console.firebase.google.com>, crie um projeto e adicione um **App da Web**.
-2. Em **Authentication → Sign-in method**, ative o provedor **Google**.
-3. Em **Authentication → Settings → Authorized domains**, adicione o domínio do site (ex.: `williancoder.github.io`).
-4. Em **Firestore Database**, crie o banco (modo produção) e cole estas regras:
+### Ativar as contas (Firebase, plano gratuito)
 
-   ```
-   rules_version = '2';
-   service cloud.firestore {
-     match /databases/{database}/documents {
-       match /users/{userId} {
-         allow read, write: if request.auth != null && request.auth.uid == userId;
-       }
-     }
-   }
-   ```
+O passo a passo completo está no Painel, aba **Avançado**. Resumo:
 
-5. Copie a configuração do app (apiKey, authDomain, projectId, appId) para `firebase` em `assets/js/config.js`.
+1. Em <https://console.firebase.google.com>, crie o projeto.
+2. **Authentication → Método de login:** ative **E-mail/senha** (e Google, se quiser).
+3. **Authentication → Configurações → Domínios autorizados:** adicione os domínios do site (ex.: `atlas-concursos.pages.dev`, `williancoder.github.io` e o domínio próprio).
+4. **Firestore Database:** crie o banco em modo produção (`southamerica-east1`).
+5. Crie sua conta no site com o e-mail do administrador, confirme o e-mail e preencha **E-mail do administrador** no Painel.
+6. **Firestore → Regras:** cole as regras geradas pelo Painel e publique.
+7. Copie o `firebaseConfig` do app web para o campo **Configuração do app web** no Painel e publique.
 
-> A `apiKey` do Firebase para web é pública por design; a segurança vem das regras acima.
+> A `apiKey` do Firebase para web é pública por design; a segurança vem das regras. Só a conta com o e-mail de administrador **confirmado** lê os dados de todos.
+
+## Serviços pagos e lembretes
+
+- **Pesquisa no Diário Oficial** (`#/pesquisa-diario`): o candidato preenche nome, WhatsApp, estado e concurso, recebe um **código de pedido** e o **Pix com o valor e o código** (QR Code e copia e cola), e envia o comprovante no WhatsApp com a mensagem pronta. Preço, prazo e ativação ficam no Painel (*Pix, serviços e contato*). Com contas ativas, o pedido exige login e aparece no Painel, aba **Pedidos**, onde você muda a situação (aguardando → pago → entregue) e responde pelo WhatsApp com um toque.
+- **Lembretes no WhatsApp** (`#/concursos`): ao cadastrar um concurso, o candidato pode pedir avisos (fim das inscrições, 7 dias e véspera da prova, dia do resultado). Na aba **Lembretes de hoje** do Painel, cada aviso do dia vem com a mensagem pronta para enviar no WhatsApp.
 
 ## Painel do Administrador (`/admin.html`)
 
-Edite a **Agenda de Inscrições**, **Pix, contato, patrocínios, links de afiliado, dicas patrocinadas, preços, AdSense e Firebase** pelo navegador — no computador ou no celular — sem mexer em código.
+Edite a **Agenda de Inscrições**, **Pix, serviços, contato, patrocínios (com período, posição e prévia), links de afiliado, dicas patrocinadas, preços, AdSense e Firebase** e acompanhe **pedidos, usuários e lembretes** pelo navegador — no computador ou no celular — sem mexer em código.
 
 1. Crie um token em <https://github.com/settings/personal-access-tokens/new>: *Only select repositories* → este repositório; *Permissions → Contents: Read and write* e *Actions: Read and write* (para o botão "Atualizar o Radar agora"); validade de 90 dias.
 2. Abra `https://SEU-SITE/admin.html`, cole o token e entre.
@@ -80,7 +79,8 @@ Tudo é configurado pelo **Painel do Administrador** (ou em `assets/js/config.js
 |---|---|---|
 | **Apoie o Atlas** (`#/apoie`) | Doação por Pix com QR Code e "copia e cola" gerados no navegador (padrão BR Code do Banco Central), com valores sugeridos de R$ 5 a R$ 50 ou valor livre. | `pix.chave`, `pix.nome`, `pix.cidade` |
 | **Anuncie no Atlas** (`#/anuncie`) | Página comercial com pacotes de patrocínio a preço fixo (a partir de R$ 29), regras de transparência e botão de WhatsApp/e-mail. | `contato.whatsapp` e/ou `contato.email`; preços em `pacotes` |
-| **Cards "Patrocinado"** | Aparecem na página inicial, Radar, Descubra, categorias, hubs dos estados ou Ferramentas e somem sozinhos na data final. | `patrocinios` |
+| **Cards "Patrocinado"** | Aparecem nas páginas escolhidas (início, Radar, Descubra, categorias, estados ou Ferramentas), no topo, no meio ou no fim. Período diário, semanal, quinzenal, mensal ou personalizado: entram na data de início e somem sozinhos na data final. A aba **Testar anúncios** mostra a prévia no celular e no computador e abre o site com o anúncio só para você. | `patrocinios` |
+| **Pesquisa no Diário Oficial** | Serviço pago (R$ 15) com Pix por pedido e atendimento no WhatsApp. | `servicos.diario`, `contato.whatsapp`, `pix` |
 | **Dica patrocinada** | Substitui a "Dica do dia" num dia específico. | `dicasPatrocinadas` |
 | **Recomendados (afiliados)** | Livros, cursos e materiais com link de afiliado, sempre com aviso de transparência. | `recomendados` |
 | **Lista de espera do Atlas Pro** | Chamada para um futuro plano pago (alertas de edital). | `listaEsperaPro` (link de um Google Forms) |
