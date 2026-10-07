@@ -104,7 +104,8 @@
       html:
         '<div class="page-head"><div><span class="eyebrow">' + icon('radar') + 'Inscrições abertas agora</span><h1>Radar de Editais</h1>' +
         '<p>Concursos com <b>inscrição aberta hoje</b>: os conferidos pela equipe do Atlas e os que o robô encontra todo dia nos sites oficiais. Inscrição encerrada não aparece aqui.</p></div>' +
-        (updated ? '<span class="badge">Atualizado em ' + esc(updated) + '</span>' : '') + '</div>' +
+        '<div class="btn-row">' + (updated ? '<span class="badge">Atualizado em ' + esc(updated) + '</span>' : '') +
+          '<a class="btn btn-sm" href="' + esc(A.shareWa('📢 ' + (totalOpen() ? totalOpen() + ' concursos com inscrição aberta hoje' : 'Radar de Editais') + ' — veja no Atlas Concursos:', '#/radar')) + '" target="_blank" rel="noopener">' + icon('chat') + 'Compartilhar no WhatsApp</a></div></div>' +
         (any ? '<div class="toolbar"><div class="filter-input">' + icon('search') + '<input class="input" id="rq" type="search" placeholder="Filtrar: PM, soldado, TJ, escrevente…" value="' + esc(ui.q) + '"></div>' +
           '<select class="select" id="ruf" style="width:auto">' + ufOptions(ui.uf, 'Todo o Brasil') + '</select></div>' +
           '<div id="r-open"></div>' : '') +
@@ -132,6 +133,7 @@
               return '<div class="row">' + A.mono(x.n, x.site) + '<div class="grow"><div class="title" style="white-space:normal">' + esc(x.t) + '</div><div class="sub">' + esc(x.n) + ' · desde ' + esc(fmtDate(x.d)) + '</div>' +
                 (bs.length ? '<div class="subs" style="margin-top:6px">' + bs.map((b) => '<a class="chip find-chip" href="' + esc(A.bancas.links(b, x.n.replace(/ — [A-Z]{2}$/, '')).chamada) + '" target="_blank" rel="noopener">' + icon('clipboard') + 'Na banca (' + esc(b.n) + ')</a>').join('') + '</div>' : '') + '</div>' +
                 A.extLink(x.u, 'btn btn-sm btn-primary', 'Abrir') +
+                '<a class="icon-btn" href="' + esc(A.shareWa('Inscrições abertas: ' + x.t + ' (' + x.n + ')', '#/radar')) + '" target="_blank" rel="noopener" title="Enviar para um amigo no WhatsApp" aria-label="Compartilhar no WhatsApp">' + icon('chat') + '</a>' +
                 '<button class="icon-btn fav' + (A.isFav(x.site) ? ' on' : '') + '" data-action="fav" data-url="' + esc(x.site) + '" title="Salvar o site do órgão" aria-label="Salvar">' + icon('star') + '</button></div>';
             }).join('') + '</div></section>';
           box.innerHTML = html || A.emptyBox('search', 'Nada aberto com esse filtro', 'Tente outro estado ou outra palavra.');

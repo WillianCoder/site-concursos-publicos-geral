@@ -7,23 +7,40 @@ service cloud.firestore {
     function signedIn() { return request.auth != null; }
     function isAdmin() { return signedIn() && request.auth.token.email == 'SEU-EMAIL-DE-ADMIN@exemplo.com' && request.auth.token.email_verified == true; }
     function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    function str(v, max) { return v is string && v.size() <= max; }
 
-    // Dados sincronizados do aparelho: só o dono.
-    match /users/{uid} { allow read, write: if isOwner(uid); }
-
-    // Perfil (nome, e-mail, WhatsApp): o dono e o administrador.
-    match /perfis/{uid} { allow read, write: if isOwner(uid) || isAdmin(); }
-
-    // Pedidos: o cliente cria e lê os seus; só o administrador muda a situação.
-    match /pedidos/{id} {
-      allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.status == 'aguardando';
-      allow read: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
-      allow update, delete: if isAdmin();
+    // Dados sincronizados do aparelho: só o dono (até ~900 KB).
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow write: if isOwner(uid) && request.resource.data.keys().hasOnly(['data', 'updatedAt', 'email']) && str(request.resource.data.data, 900000);
     }
 
-    // Lembretes no WhatsApp: o dono e o administrador.
+    // Perfil (nome, e-mail, WhatsApp): o dono e o administrador.
+    match /perfis/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow write: if isAdmin() || (isOwner(uid)
+        && request.resource.data.keys().hasOnly(['uid', 'nome', 'email', 'whatsapp', 'aceitaWhats', 'aceitouTermosEm', 'criadoEm', 'atualizadoEm'])
+        && str(request.resource.data.nome, 120) && str(request.resource.data.whatsapp, 15));
+    }
+
+    // Pedidos: o cliente cria e lê os seus e pode cancelar enquanto aguarda pagamento;
+    // só o administrador marca como pago ou entregue.
+    match /pedidos/{id} {
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == 'aguardando' && request.resource.data.valor is number
+        && request.resource.data.keys().hasOnly(['codigo', 'servico', 'plano', 'valor', 'status', 'criadoEm', 'nome', 'whatsapp', 'uf', 'concurso', 'inscricao', 'rg', 'desde', 'obs', 'uid', 'email'])
+        && str(request.resource.data.nome, 120) && str(request.resource.data.concurso, 160) && str(request.resource.data.obs, 500);
+      allow read: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow update: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid && resource.data.status == 'aguardando'
+        && request.resource.data.status == 'cancelado' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'atualizadoEm']));
+      allow delete: if isAdmin();
+    }
+
+    // Lembretes no WhatsApp: o dono (até 4 avisos por concurso) e o administrador.
     match /lembretes/{id} {
-      allow create, update: if isAdmin() || (signedIn() && request.resource.data.uid == request.auth.uid && (resource == null || resource.data.uid == request.auth.uid));
+      allow create, update: if isAdmin() || (signedIn() && request.resource.data.uid == request.auth.uid
+        && (resource == null || resource.data.uid == request.auth.uid)
+        && request.resource.data.avisos.size() <= 4 && str(request.resource.data.concurso, 160));
       allow read, delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
     }
   }

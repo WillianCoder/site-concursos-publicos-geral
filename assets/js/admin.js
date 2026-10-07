@@ -85,6 +85,8 @@
     if (typeof c.adminEmail !== 'string') c.adminEmail = '';
     c.servicos = c.servicos || {};
     c.servicos.diario = Object.assign({ ativo: true, preco: 15, prazo: 'em até 2 dias úteis' }, c.servicos.diario || {});
+    c.servicos.acompanhamento = Object.assign({ ativo: false, preco: 39, semanas: 4 }, c.servicos.acompanhamento || {});
+    c.limites = Object.assign({ buscasDia: 5, buscasDiaConta: 15, lembretes: 3, pedidosAbertos: 2, pedidosDia: 3 }, c.limites || {});
     return c;
   }
 
@@ -177,6 +179,8 @@
     });
     if (cfg.contato.whatsapp && !/^\d{12,13}$/.test(cfg.contato.whatsapp)) e.push('WhatsApp: use só números com DDI e DDD, ex.: 5511999999999');
     if (!(Number(cfg.servicos.diario.preco) > 0)) e.push('Pesquisa no Diário: informe o preço (ex.: 15)');
+    if (cfg.servicos.acompanhamento.ativo && !(Number(cfg.servicos.acompanhamento.preco) > 0 && Number(cfg.servicos.acompanhamento.semanas) >= 1)) e.push('Acompanhamento: informe o preço e o número de semanas');
+    Object.keys(cfg.limites).forEach((k) => { const v = cfg.limites[k]; if (!(Number.isInteger(Number(v)) && Number(v) >= 0 && Number(v) <= 1000)) e.push('Limites: use números inteiros de 0 a 1000 (0 = sem limite)'); });
     if (cfg.adminEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cfg.adminEmail)) e.push('E-mail do administrador inválido');
     cfg.patrocinios.forEach((p) => { if (p.inicio && p.ate && p.inicio > p.ate) e.push('Patrocínio "' + (p.titulo || '?') + '": o início está depois do fim'); });
     if (cfg.ads.client && !/^ca-pub-\d{10,20}$/.test(cfg.ads.client)) e.push('AdSense: o ID deve ter o formato ca-pub-0000000000000000');
@@ -340,7 +344,7 @@
   }
 
   /* ---------- Abas ---------- */
-  const TABS = [['geral', 'Visão geral'], ['pedidos', 'Pedidos'], ['lembretes', 'Lembretes de hoje'], ['usuarios', 'Usuários'], ['agenda', 'Concursos abertos'], ['pix', 'Pix, serviços e contato'], ['patrocinios', 'Patrocínios'], ['teste', 'Testar anúncios'], ['recomendados', 'Afiliados e dicas'], ['pacotes', 'Preços (Anuncie)'], ['anuncios', 'AdSense e Pro'], ['avancado', 'Avançado']];
+  const TABS = [['geral', 'Visão geral'], ['pedidos', 'Pedidos'], ['lembretes', 'Lembretes de hoje'], ['usuarios', 'Usuários'], ['agenda', 'Concursos abertos'], ['pix', 'Pix, serviços e contato'], ['limites', 'Limites de uso'], ['patrocinios', 'Patrocínios'], ['teste', 'Testar anúncios'], ['recomendados', 'Afiliados e dicas'], ['pacotes', 'Preços (Anuncie)'], ['anuncios', 'AdSense e Pro'], ['avancado', 'Avançado']];
 
   function viewGeral() {
     const ativos = cfg.patrocinios.filter((p) => (!p.inicio || p.inicio <= today()) && (!p.ate || p.ate >= today()));
@@ -365,7 +369,8 @@
         (RADAR.updatedAt ? ' Última varredura: <b>' + esc(new Date(RADAR.updatedAt).toLocaleString('pt-BR')) + '</b> · ' + (RADAR.abertas || []).length + ' inscrições abertas encontradas.' : ' Ainda não houve varredura.') + '</p></section>' +
       '<section class="section"><div class="section-head"><h2>Checklist para começar a faturar</h2></div><div class="list">' +
         check(agenda.itens.length >= 5, 'Agenda de Inscrições com pelo menos 5 concursos (ela traz visitas todo dia)', 'agenda') +
-        check(cfg.pix.chave && cfg.pix.nome && cfg.pix.cidade, 'Pix configurado — página <b>Apoie o Atlas</b> no ar', 'pix') +
+        check(cfg.pix.chave && cfg.pix.nome && cfg.pix.cidade, 'Pix configurado — QR Code nos pedidos e página <b>Apoie o Atlas</b> no ar', 'pix') +
+        check(hasFirebase() && cfg.adminEmail, 'Contas ativadas (Firebase) e e-mail do administrador — libera Pedidos, Usuários e Lembretes', 'avancado') +
         check(cfg.contato.whatsapp || cfg.contato.email, 'Contato comercial — página <b>Anuncie no Atlas</b> no ar', 'pix') +
         check(cfg.recomendados.length, 'Pelo menos um link de afiliado (Amazon, Hotmart, Kiwify)', 'recomendados') +
         check(ativos.length, 'Primeiro patrocinador fechado (dica: ofereça o Destaque no estado aos cursinhos da sua cidade)', 'patrocinios') +
@@ -395,7 +400,13 @@
         '<div class="adm-grid">' +
           pathInput('Preço (R$)', 'servicos.diario.preco', String(cfg.servicos.diario.preco), { kind: 'number', ph: '15' }) +
           pathInput('Prazo de entrega', 'servicos.diario.prazo', cfg.servicos.diario.prazo, { ph: 'em até 2 dias úteis' }) +
-        '</div><p class="adm-help">O cliente paga pelo Pix configurado acima (com o código do pedido) e envia o comprovante para o WhatsApp abaixo. Os pedidos aparecem na aba <b>Pedidos</b>.</p></div>' +
+        '</div><p class="adm-help">O cliente paga pelo Pix configurado acima (com o código do pedido) e envia o comprovante para o WhatsApp abaixo. Os pedidos aparecem na aba <b>Pedidos</b>.</p>' +
+        '<h3 style="font-size:15px;margin-top:6px">Plano extra: Acompanhamento</h3>' +
+        '<label class="check"><input type="checkbox" data-path="servicos.acompanhamento.ativo" data-kind="bool"' + (cfg.servicos.acompanhamento.ativo ? ' checked' : '') + '> Oferecer também o acompanhamento semanal (o cliente escolhe o plano no pedido)</label>' +
+        '<div class="adm-grid">' +
+          pathInput('Preço do acompanhamento (R$)', 'servicos.acompanhamento.preco', String(cfg.servicos.acompanhamento.preco), { kind: 'number', ph: '39' }) +
+          pathInput('Quantas semanas', 'servicos.acompanhamento.semanas', String(cfg.servicos.acompanhamento.semanas), { kind: 'number', ph: '4' }) +
+        '</div><p class="adm-help">Você confere o Diário do cliente uma vez por semana e avisa no WhatsApp quando o nome sair. Bom para quem espera convocação.</p></div>' +
       '<div class="panel panel-pad adm-section"><h2 style="font-size:18px">WhatsApp e contato (pedidos, lembretes e "Anuncie")</h2><div class="adm-grid">' +
         pathInput('WhatsApp', 'contato.whatsapp', cfg.contato.whatsapp, { kind: 'digits', ph: '5511999999999', help: 'Só números: 55 + DDD + número. Recebe os comprovantes dos pedidos e os contatos de anunciantes.' }) +
         pathInput('E-mail', 'contato.email', cfg.contato.email, { ph: 'contato@seudominio.com.br' }) +
@@ -728,7 +739,7 @@
   }
 
   const ORDER_ST = [['aguardando', 'Aguardando pagamento'], ['pago', 'Pago · pesquisar'], ['entregue', 'Entregue'], ['cancelado', 'Cancelado']];
-  const DESDE_TXT = { '3m': 'últimos 3 meses', '6m': 'últimos 6 meses', '1a': 'último ano', tudo: 'desde o início do concurso' };
+  const DESDE_TXT = { '3m': 'últimos 3 meses', '6m': 'últimos 6 meses', '1a': 'últimos 12 meses', tudo: 'desde o início do concurso' };
   function orderMsg(p) {
     const n = (p.nome || '').split(' ')[0];
     if (p.status === 'aguardando') return 'Olá, ' + n + '! Aqui é do Atlas Concursos. Recebemos seu pedido ' + p.codigo + ' da Pesquisa no Diário Oficial. Assim que o Pix de ' + brl(p.valor) + ' for confirmado, começamos a pesquisa.';
@@ -743,7 +754,7 @@
       const f = list.filter((p) => filt === 'todos' || (filt === 'ativos' ? ['aguardando', 'pago'].includes(p.status) : p.status === filt));
       $('#o-list', box).innerHTML = f.length ? f.map((p) =>
         '<div class="panel adm-item" data-oid="' + esc(p.id) + '"><div class="adm-item-head"><h3>' + esc(p.codigo || p.id) + ' · ' + esc(p.nome) + '</h3><span class="badge">' + brl(p.valor) + '</span></div>' +
-          '<div class="adm-help"><b>' + esc(p.concurso) + '</b>' + (p.uf ? ' (' + esc(p.uf) + ')' : '') + ' · pedido em ' + esc(fmtD(p.criadoEm)) +
+          '<div class="adm-help">' + (p.plano === 'acompanhamento' ? '<span class="badge accent">Acompanhamento</span> ' : '') + '<b>' + esc(p.concurso) + '</b>' + (p.uf ? ' (' + esc(p.uf) + ')' : '') + ' · pedido em ' + esc(fmtD(p.criadoEm)) +
             (p.inscricao ? ' · inscrição <b>' + esc(p.inscricao) + '</b>' : '') + (p.rg ? ' · RG <b>' + esc(p.rg) + '</b>' : '') + (p.desde ? ' · procurar nos ' + esc(DESDE_TXT[p.desde] || p.desde) : '') +
             (p.obs ? '<br>Obs.: ' + esc(p.obs) : '') + (p.email ? '<br>Conta: ' + esc(p.email) : '') + '</div>' +
           '<div class="btn-row"><select class="select" data-ost style="max-width:240px">' + ORDER_ST.map((o) => '<option value="' + o[0] + '"' + (p.status === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select>' +
@@ -808,21 +819,54 @@
   }
 
   /* ---------- Guia do Firebase e regras de segurança ---------- */
+  // Mesmo texto do arquivo firestore.rules, com o e-mail do administrador.
+  const RULES = `rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isAdmin() { return signedIn() && request.auth.token.email == '__ADMIN__' && request.auth.token.email_verified == true; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+    function str(v, max) { return v is string && v.size() <= max; }
+
+    // Dados sincronizados do aparelho: só o dono (até ~900 KB).
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow write: if isOwner(uid) && request.resource.data.keys().hasOnly(['data', 'updatedAt', 'email']) && str(request.resource.data.data, 900000);
+    }
+
+    // Perfil (nome, e-mail, WhatsApp): o dono e o administrador.
+    match /perfis/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow write: if isAdmin() || (isOwner(uid)
+        && request.resource.data.keys().hasOnly(['uid', 'nome', 'email', 'whatsapp', 'aceitaWhats', 'aceitouTermosEm', 'criadoEm', 'atualizadoEm'])
+        && str(request.resource.data.nome, 120) && str(request.resource.data.whatsapp, 15));
+    }
+
+    // Pedidos: o cliente cria e lê os seus e pode cancelar enquanto aguarda pagamento;
+    // só o administrador marca como pago ou entregue.
+    match /pedidos/{id} {
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid
+        && request.resource.data.status == 'aguardando' && request.resource.data.valor is number
+        && request.resource.data.keys().hasOnly(['codigo', 'servico', 'plano', 'valor', 'status', 'criadoEm', 'nome', 'whatsapp', 'uf', 'concurso', 'inscricao', 'rg', 'desde', 'obs', 'uid', 'email'])
+        && str(request.resource.data.nome, 120) && str(request.resource.data.concurso, 160) && str(request.resource.data.obs, 500);
+      allow read: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow update: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid && resource.data.status == 'aguardando'
+        && request.resource.data.status == 'cancelado' && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'atualizadoEm']));
+      allow delete: if isAdmin();
+    }
+
+    // Lembretes no WhatsApp: o dono (até 4 avisos por concurso) e o administrador.
+    match /lembretes/{id} {
+      allow create, update: if isAdmin() || (signedIn() && request.resource.data.uid == request.auth.uid
+        && (resource == null || resource.data.uid == request.auth.uid)
+        && request.resource.data.avisos.size() <= 4 && str(request.resource.data.concurso, 160));
+      allow read, delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+    }
+  }
+}
+`;
   function rulesText(email) {
-    const adm = String(email || 'SEU-EMAIL-DE-ADMIN@exemplo.com').replace(/'/g, '');
-    return "rules_version = '2';\nservice cloud.firestore {\n  match /databases/{database}/documents {\n" +
-      "    function signedIn() { return request.auth != null; }\n" +
-      "    function isAdmin() { return signedIn() && request.auth.token.email == '" + adm + "' && request.auth.token.email_verified == true; }\n" +
-      "    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }\n\n" +
-      "    // Dados sincronizados do aparelho: só o dono.\n    match /users/{uid} { allow read, write: if isOwner(uid); }\n\n" +
-      "    // Perfil (nome, e-mail, WhatsApp): o dono e o administrador.\n    match /perfis/{uid} { allow read, write: if isOwner(uid) || isAdmin(); }\n\n" +
-      "    // Pedidos: o cliente cria e lê os seus; só o administrador muda a situação.\n    match /pedidos/{id} {\n" +
-      "      allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.status == 'aguardando';\n" +
-      "      allow read: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);\n" +
-      "      allow update, delete: if isAdmin();\n    }\n\n" +
-      "    // Lembretes no WhatsApp: o dono e o administrador.\n    match /lembretes/{id} {\n" +
-      "      allow create, update: if isAdmin() || (signedIn() && request.resource.data.uid == request.auth.uid && (resource == null || resource.data.uid == request.auth.uid));\n" +
-      "      allow read, delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);\n    }\n  }\n}\n";
+    return RULES.replace('__ADMIN__', String(email || 'SEU-EMAIL-DE-ADMIN@exemplo.com').replace(/['\\]/g, ''));
   }
   function firebaseGuide() {
     const hosts = ['atlas-concursos.pages.dev', 'williancoder.github.io'];
@@ -839,9 +883,29 @@
       '<div><button class="btn" id="adm-rules-copy" type="button">Copiar regras</button></div></details>';
   }
 
+  /* ---------- Limites de uso ---------- */
+  function viewLimites() {
+    const L = cfg.limites;
+    const n = (label, key, help) => pathInput(label, 'limites.' + key, String(L[key]), { kind: 'number', ph: '0', help });
+    return '<p class="adm-help">Os limites deixam o serviço profissional e protegem o seu tempo: o visitante usa o grátis com folga e, quando precisa de mais, encontra o serviço pago. <b>0 = sem limite.</b> Os contadores zeram todo dia à meia-noite.</p>' +
+      '<div class="tool-layout">' +
+        '<div class="panel panel-pad adm-section"><h2 style="font-size:18px">Busca grátis "Meu nome no Diário"</h2><div class="adm-grid">' +
+          n('Buscas por dia (visitante)', 'buscasDia', 'Sem conta. Ao acabar, o site oferece a pesquisa paga.') +
+          n('Buscas por dia (com conta)', 'buscasDiaConta', 'Incentiva o cadastro: quem cria conta busca mais.') +
+        '</div></div>' +
+        '<div class="panel panel-pad adm-section"><h2 style="font-size:18px">Pedidos e lembretes</h2><div class="adm-grid">' +
+          n('Pedidos aguardando pagamento por pessoa', 'pedidosAbertos', 'Evita pedidos falsos: só faz outro depois de pagar ou cancelar.') +
+          n('Pedidos por dia por pessoa', 'pedidosDia', 'Proteção contra abuso.') +
+          n('Concursos com lembrete no WhatsApp por pessoa', 'lembretes', 'Controla quantas mensagens você envia por dia.') +
+        '</div></div>' +
+      '</div>' +
+      '<div class="panel panel-pad section adm-section"><h2 style="font-size:17px">O que a Pesquisa no Diário cobre</h2>' +
+        '<p class="adm-help">Aparece na página do serviço e nos termos: <b>1 pessoa, 1 concurso, Diário Oficial do estado e da União, site do órgão e da banca, últimos 12 meses</b>. Outro concurso ou outra pessoa = outro pedido. Diários de prefeituras, área do candidato com senha e orientação jurídica não estão incluídos.</p></div>';
+  }
+
   function renderApp() {
     $('#adm-save').hidden = false; $('#adm-logout').hidden = false;
-    const views = { geral: viewGeral, agenda: viewAgenda, pix: viewPix, patrocinios: viewPatrocinios, teste: viewTeste, recomendados: viewRecomendados, pacotes: viewPacotes, anuncios: viewAnuncios, avancado: viewAvancado, pedidos: viewCloud, lembretes: viewCloud, usuarios: viewCloud };
+    const views = { geral: viewGeral, agenda: viewAgenda, pix: viewPix, patrocinios: viewPatrocinios, teste: viewTeste, recomendados: viewRecomendados, pacotes: viewPacotes, anuncios: viewAnuncios, avancado: viewAvancado, pedidos: viewCloud, lembretes: viewCloud, usuarios: viewCloud, limites: viewLimites };
     const root = $('#adm');
     root.innerHTML =
       (session.demo ? '<div class="panel panel-pad" style="margin-bottom:16px;border-color:var(--warn)"><b>Modo demonstração.</b> <span class="muted">Explore à vontade: nada aqui é publicado. Para salvar de verdade, entre com o token do GitHub no site publicado.</span></div>' : '') +

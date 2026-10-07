@@ -775,3 +775,22 @@ details.ag-section > summary::-webkit-details-marker { display: none; }
 .sponsor-preview { outline: 2px dashed var(--warn); outline-offset: 4px; border-radius: var(--radius); }
 .tool-layout > *, .service-layout > * { min-width: 0; }
 .order-row .grow { min-width: 160px; }
+
+/* ---------- Limites, planos e escopo do serviço ---------- */
+.limit-box { display: flex; gap: 14px; align-items: flex-start; border-color: color-mix(in srgb, var(--warn) 45%, var(--border)); }
+.limit-box h3 { font-size: 17px; margin-bottom: 4px; }
+.limit-box .btn-row { margin-top: 12px; }
+.plan-pick { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.plan { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 14px 14px 14px 42px; border: 1.5px solid var(--border); border-radius: 14px; cursor: pointer; background: var(--input); }
+.plan input { position: absolute; left: 14px; top: 16px; width: 18px; height: 18px; accent-color: var(--c1); margin: 0; }
+.plan:has(input:checked) { border-color: transparent; background: linear-gradient(var(--panel-solid), var(--panel-solid)) padding-box, var(--grad) border-box; }
+.plan-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.plan-price { font: 700 18px var(--font-display); }
+.plan small { color: var(--muted); font-size: 13px; line-height: 1.4; }
+.scope .eyebrow { display: flex; }
+.scope-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 14px; }
+.scope-list li { display: flex; gap: 8px; align-items: flex-start; color: var(--muted); }
+.scope-list .i { width: 16px; height: 16px; flex: none; margin-top: 2px; }
+.scope-list.ok .i { color: var(--c3); }
+.scope-list.no .i { color: var(--danger); }
+#finder-left { align-self: center; }
