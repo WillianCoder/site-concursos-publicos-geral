@@ -1,0 +1,30 @@
+name: Backup Automático (Windows)
+
+on:
+  push:
+    paths: ['backup-automatico/**', '.github/workflows/backup-automatico.yml']
+  pull_request:
+    paths: ['backup-automatico/**', '.github/workflows/backup-automatico.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  testar:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Testes do núcleo (Windows PowerShell 5.1)
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File backup-automatico/testes/Testar.ps1
+      - name: Painel - telas e um backup de verdade
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File backup-automatico/testes/Telas.ps1 -Saida "$env:RUNNER_TEMP\telas"
+      - name: Guardar imagens das telas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: telas-backup-automatico
+          path: ${{ runner.temp }}/telas
+          if-no-files-found: ignore
