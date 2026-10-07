@@ -2,6 +2,7 @@ name: Backup Automático (Windows)
 
 on:
   push:
+    branches: [main]
     paths: ['backup-automatico/**', '.github/workflows/backup-automatico.yml']
   pull_request:
     paths: ['backup-automatico/**', '.github/workflows/backup-automatico.yml']
