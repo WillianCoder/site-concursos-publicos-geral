@@ -22,16 +22,6 @@ jobs:
       - name: Painel - telas e um backup de verdade
         shell: powershell
         run: powershell -NoProfile -ExecutionPolicy Bypass -File backup-automatico/testes/Telas.ps1 -Saida "$env:RUNNER_TEMP\telas"
-      - name: Imagens em texto (temporario)
-        if: always()
-        shell: powershell
-        run: |
-          Get-ChildItem "$env:RUNNER_TEMP\telas" -Filter *.png | ForEach-Object {
-            $b = [Convert]::ToBase64String([IO.File]::ReadAllBytes($_.FullName))
-            Write-Host "=====INICIO $($_.Name)"
-            for ($i = 0; $i -lt $b.Length; $i += 4000) { Write-Host ('B64:' + $b.Substring($i, [Math]::Min(4000, $b.Length - $i))) }
-            Write-Host "=====FIM $($_.Name)"
-          }
       - name: Guardar imagens das telas
         if: always()
         uses: actions/upload-artifact@v4

@@ -133,6 +133,11 @@ function New-Botao([string]$Texto, [switch]$Primario, [switch]$Perigo) {
     return $b
 }
 
+function Set-BotaoCompacto($Botao) {
+    $Botao.Padding = New-Margem (S 8) (S 1) (S 8) (S 1)
+    return $Botao
+}
+
 function New-Fluxo([switch]$Vertical) {
     $f = New-Object System.Windows.Forms.FlowLayoutPanel
     $f.AutoSize = $true
@@ -350,11 +355,11 @@ try {
 } catch { }
 $script:Colunas = @(
     @{ Titulo = 'Situação';       Fixa = 118 },
-    @{ Titulo = 'Nome';           Parte = 0.17 },
-    @{ Titulo = 'Copiar de';      Parte = 0.25 },
-    @{ Titulo = 'Para';           Parte = 0.25 },
+    @{ Titulo = 'Nome';           Parte = 0.15 },
+    @{ Titulo = 'Copiar de';      Parte = 0.22 },
+    @{ Titulo = 'Para';           Parte = 0.22 },
     @{ Titulo = 'Frequência';     Fixa = 118 },
-    @{ Titulo = 'Último backup';  Parte = 0.33 },
+    @{ Titulo = 'Último backup';  Parte = 0.41 },
     @{ Titulo = 'Próximo backup'; Fixa = 168 }
 )
 foreach ($c in $script:Colunas) { [void]$Lista.Columns.Add($c.Titulo, (S 100)) }
@@ -573,17 +578,27 @@ function Update-Status {
     } else {
         $proximo = $null
         $quando = $null
+        $comErro = $null
+        $aguardando = $null
         foreach ($t in $script:Cfg.trabalhos) {
             if (-not $t.ativo) { continue }
+            if ($t.ultimoStatus -eq 'erro' -and $null -eq $comErro) { $comErro = $t }
+            if ($t.ultimoStatus -eq 'indisponivel' -and $null -eq $aguardando) { $aguardando = $t }
             $p = Get-ProximaExecucao $t
             if ($null -eq $quando -or $p -lt $quando) { $quando = $p; $proximo = $t }
         }
-        if ($null -eq $proximo) {
+        $dica = 'Backup Automático - tudo certo'
+        if ($null -ne $comErro) {
+            $texto = 'Atenção: o backup “' + $comErro.nome + '” teve um problema. Veja a coluna “Último backup”.'
+            $dica = 'Backup Automático - atenção'
+        } elseif ($null -ne $aguardando) {
+            $texto = 'O backup “' + $aguardando.nome + '” está esperando a pasta (ou o Google Drive) ficar disponível. Ele tenta de novo sozinho.'
+            $dica = 'Backup Automático - aguardando'
+        } elseif ($null -eq $proximo) {
             $texto = 'Todos os backups estão pausados.'
         } else {
             $texto = 'Tudo certo. Próximo backup: “' + $proximo.nome + '”, ' + (Get-TextoProximo $proximo).ToLower() + '.'
         }
-        $dica = 'Backup Automático - tudo certo'
     }
     if ($LblStatus.Text -ne $texto) { $LblStatus.Text = $texto }
     if ($dica.Length -gt 63) { $dica = $dica.Substring(0, 60) + '...' }
@@ -693,7 +708,7 @@ function Show-DialogoTrabalho {
     # Origem
     $txtOrigem = New-Caixa
     $txtOrigem.Text = $Trabalho.origem
-    $btnOrigem = New-Botao 'Escolher...'
+    $btnOrigem = Set-BotaoCompacto (New-Botao 'Escolher...')
     $btnOrigem.Margin = New-Margem 0 (S 2) 0 (S 2)
     $g.Controls.Add((New-Titulo 'Copiar a pasta'), 0, 1)
     $g.Controls.Add($txtOrigem, 1, 1)
@@ -705,13 +720,13 @@ function Show-DialogoTrabalho {
     # Destino
     $txtDestino = New-Caixa
     $txtDestino.Text = $Trabalho.destinoBase
-    $btnDestino = New-Botao 'Escolher...'
+    $btnDestino = Set-BotaoCompacto (New-Botao 'Escolher...')
     $btnDestino.Margin = New-Margem 0 (S 2) 0 (S 2)
     $g.Controls.Add((New-Titulo 'Para a pasta'), 0, 3)
     $g.Controls.Add($txtDestino, 1, 3)
     $g.Controls.Add($btnDestino, 2, 3)
     $fluxoDestino = New-Fluxo
-    $btnDrive = New-Botao 'Usar meu Google Drive'
+    $btnDrive = Set-BotaoCompacto (New-Botao 'Usar meu Google Drive')
     $btnDrive.Margin = New-Margem 0 (S 2) (S 12) (S 2)
     if (-not $drive) { $btnDrive.Enabled = $false; $btnDrive.Text = 'Google Drive não encontrado' }
     $chkSub = New-Object System.Windows.Forms.CheckBox
@@ -759,7 +774,7 @@ function Show-DialogoTrabalho {
     $inicio = ConvertFrom-TextoData $Trabalho.inicio
     if ($null -eq $inicio) { $inicio = Get-Date }
     $dtp.Value = $inicio
-    $btnAgoraData = New-Botao 'Agora'
+    $btnAgoraData = Set-BotaoCompacto (New-Botao 'Agora')
     $btnAgoraData.Margin = New-Margem 0 (S 2) 0 (S 2)
     $fluxoInicio.Controls.AddRange(@($dtp, $btnAgoraData))
     $g.Controls.Add((New-Titulo 'Começar em'), 0, 7)
