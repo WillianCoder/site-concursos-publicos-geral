@@ -254,8 +254,10 @@
     const msg = 'Olá! Tenho interesse em anunciar no Atlas Concursos.';
     const wa = contato.whatsapp ? 'https://wa.me/' + String(contato.whatsapp).replace(/\D/g, '') + '?text=' + encodeURIComponent(msg) : '';
     const mail = contato.email ? 'mailto:' + contato.email + '?subject=' + encodeURIComponent('Anunciar no Atlas Concursos') : '';
-    const cta = (wa ? '<a class="btn btn-primary" href="' + esc(wa) + '" target="_blank" rel="noopener">' + icon('external') + 'Falar no WhatsApp</a>' : '') +
-      (mail ? '<a class="btn" href="' + esc(mail) + '">' + icon('note') + 'Enviar e-mail</a>' : '');
+    const cta = (wa ? '<a class="btn btn-primary" href="' + esc(wa) + '" target="_blank" rel="noopener">' + icon('chat') + 'Falar no WhatsApp</a>' : '') +
+      (mail ? '<a class="btn" href="' + esc(mail) + '">' + icon('note') + 'Enviar e-mail</a>' : '') +
+      '<a class="btn" href="assets/docs/atlas-concursos-apresentacao.pdf" target="_blank" rel="noopener">' + icon('download') + 'Apresentação (PDF)</a>';
+    const want = (p) => contato.whatsapp ? 'https://wa.me/' + String(contato.whatsapp).replace(/\D/g, '') + '?text=' + encodeURIComponent('Olá! Quero anunciar no Atlas Concursos com o pacote "' + p.nome + '" (' + p.preco + '). Meu negócio é: ') : '';
     return {
       title: 'Anuncie no Atlas',
       crumbs: [['Início', '#/'], ['Anuncie no Atlas', '#/anuncie']],
@@ -266,7 +268,14 @@
         '<div class="cards">' + pacotes.map((p) =>
           '<article class="card"><div class="card-top"><span class="tile-icon">' + icon('sparkle') + '</span><div class="card-title"><h3>' + esc(p.nome) + '</h3><span class="domain">' + esc(p.ideal || '') + '</span></div></div>' +
           '<div class="result-big grad-text" style="font-size:28px">' + esc(p.preco) + '</div>' +
-          '<p class="desc">' + esc(p.desc) + '</p></article>').join('') + '</div>' +
+          '<p class="desc">' + esc(p.desc) + '</p>' +
+          (want(p) ? '<div class="card-actions"><a class="btn btn-primary btn-sm" href="' + esc(want(p)) + '" target="_blank" rel="noopener">' + icon('chat') + 'Quero este pacote</a></div>' : '') +
+          '</article>').join('') + '</div>' +
+        '<section class="section panel panel-pad"><span class="eyebrow">' + icon('target') + 'Como funciona</span><ol class="steps">' +
+          '<li>Escolha o pacote e as páginas (início, Radar, um estado, uma categoria).</li>' +
+          '<li>Escolha o período: um dia, uma semana, quinze dias ou um mês, e a data de início.</li>' +
+          '<li>Envie o texto do card e o link do seu site; mostramos a prévia antes de publicar.</li>' +
+          '<li>Pagamento por Pix. O card entra no ar na data combinada e sai sozinho no fim do período.</li></ol></section>' +
         '<p class="muted small" style="margin-top:12px">Preços de lançamento. Pagamento por Pix, sem fidelidade. Os valores acompanham o crescimento da audiência e quem entra agora mantém o preço por 3 meses.</p>' +
         '<section class="section panel panel-pad"><span class="eyebrow">' + icon('shield') + 'Regras para manter a confiança</span><ul class="rules">' +
           '<li>Todo anúncio aparece com a etiqueta <b>Patrocinado</b>.</li>' +

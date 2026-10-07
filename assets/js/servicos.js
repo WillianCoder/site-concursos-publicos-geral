@@ -5,7 +5,9 @@
  *  - Pedidos ficam no aparelho e, com a conta ativa, também no Firestore
  *    (o administrador acompanha pelo Painel, aba "Pedidos").
  *  - Lembretes de prova no WhatsApp (gravados em "lembretes" no Firestore).
- * Preço, prazo e WhatsApp vêm de config.js (servicos.diario e contato.whatsapp).
+ * Preço, prazo e WhatsApp vêm de config.js (servicos.diario, servicos.acompanhamento
+ * e contato.whatsapp). Os limites de uso (buscas grátis por dia, lembretes por
+ * pessoa, pedidos em aberto) vêm de config.limites — 0 significa "sem limite".
  */
 (function () {
   'use strict';
@@ -15,15 +17,30 @@
   const { $, esc, icon, toast, route, Store, fmtDate, addDays } = A;
 
   const SV = Object.assign({ ativo: true, preco: 15, prazo: 'em até 2 dias úteis' }, (CFG.servicos || {}).diario || {});
+  const AC = Object.assign({ ativo: false, preco: 39, semanas: 4 }, (CFG.servicos || {}).acompanhamento || {});
+  const LIM = Object.assign({ buscasDia: 5, buscasDiaConta: 15, lembretes: 3, pedidosAbertos: 2, pedidosDia: 3 }, CFG.limites || {});
   const WA = String((CFG.contato || {}).whatsapp || '').replace(/\D/g, '');
   const DRAFT = 'atlas:pedido-rascunho';
   const brl = (n) => (Number(n) || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   const ativo = () => SV.ativo !== false && !!WA && Number(SV.preco) > 0;
   const waLink = (text, to) => 'https://wa.me/' + (to || WA) + '?text=' + encodeURIComponent(text);
   const cloud = () => A.cloud || { enabled: false };
+  // Link para compartilhar no WhatsApp (o principal canal dos concurseiros).
+  const siteBase = () => String(CFG.siteUrl || (location.origin + location.pathname)).replace(/#.*$/, '');
+  A.shareWa = (text, hash) => 'https://wa.me/?text=' + encodeURIComponent(text + '\n' + siteBase() + (hash || ''));
   const hasPix = () => !!(A.pix && A.pix.ready());
   const newCode = () => 'D' + Date.now().toString(36).toUpperCase().slice(-5) + Math.random().toString(36).slice(2, 5).toUpperCase();
-  const DESDE = [['3m', 'Últimos 3 meses'], ['6m', 'Últimos 6 meses'], ['1a', 'Último ano'], ['tudo', 'Desde o início do concurso']];
+  const DESDE = [['3m', 'Últimos 3 meses'], ['6m', 'Últimos 6 meses'], ['1a', 'Últimos 12 meses']];
+  // Planos do serviço: a pesquisa avulsa e, se ativado no Painel, o acompanhamento semanal.
+  const PLANOS = () => [
+    { id: 'avulsa', nome: 'Pesquisa completa', preco: Number(SV.preco), resumo: 'Uma pesquisa completa, com o resultado explicado no WhatsApp ' + SV.prazo + '.' },
+    AC.ativo ? { id: 'acompanhamento', nome: 'Acompanhamento por ' + Number(AC.semanas) + ' semanas', preco: Number(AC.preco), resumo: 'A pesquisa completa e mais uma conferência por semana durante ' + AC.semanas + ' semanas. Avisamos no WhatsApp assim que seu nome sair.' } : null
+  ].filter((x) => x && x.preco > 0);
+  const planoOf = (id) => PLANOS().find((x) => x.id === id) || PLANOS()[0];
+  const menorPreco = () => Math.min.apply(null, PLANOS().map((x) => x.preco));
+  // O que o serviço cobre (aparece na página e nos termos).
+  const INCLUI = ['1 pessoa: nome completo, RG e nº de inscrição', '1 concurso, no estado escolhido', 'Diário Oficial do estado e Diário Oficial da União', 'Site do órgão e da banca organizadora', 'Publicações dos últimos 12 meses (você escolhe o período)', 'Resultado explicado no WhatsApp, com os links'];
+  const NAO_INCLUI = ['Outros concursos ou outras pessoas (faça um pedido para cada)', 'Diários de prefeituras (consulte no WhatsApp)', 'Acesso à área do candidato ou a sistemas com senha', 'Recursos, defesas ou orientação jurídica', 'Garantia de aprovação ou de nomeação'];
   const STATUS = {
     aguardando: ['warn', 'Aguardando pagamento'],
     pago: ['accent', 'Pago · pesquisa em andamento'],
@@ -36,9 +53,41 @@
   /* ---------- Pedidos ---------- */
   const orders = () => (Array.isArray(Store.state.pedidos) ? Store.state.pedidos : []);
 
+  /* ---------- Limites de uso (contados por dia, neste aparelho e na conta) ---------- */
+  function usage() { const d = A.dateKey(); const u = Store.state.uso; return u && u.dia === d ? u : { dia: d, buscas: 0, pedidos: 0 }; }
+  function bump(k) { Store.update((s) => { const u = usage(); u[k] = (u[k] || 0) + 1; s.uso = u; }); }
+  const searchMax = () => Number(cloud().user ? LIM.buscasDiaConta : LIM.buscasDia) || 0;
+  const Limits = {
+    searchMax,
+    searchLeft() { const m = searchMax(); return m ? Math.max(0, m - (usage().buscas || 0)) : Infinity; },
+    // Conta uma busca grátis; devolve false quando o limite do dia acabou.
+    useSearch() { if (Limits.searchLeft() <= 0) return false; bump('buscas'); return true; },
+    remindMax: () => Number(LIM.lembretes) || 0,
+    canRemind(exceptId) {
+      const m = Limits.remindMax();
+      return !m || Store.state.exams.filter((e) => e.id !== exceptId && e.lembrete && e.lembrete.on).length < m;
+    },
+    orderBlock() {
+      const open = orders().filter((p) => p.status === 'aguardando').length;
+      if (Number(LIM.pedidosAbertos) && open >= Number(LIM.pedidosAbertos)) return 'Você já tem ' + open + (open === 1 ? ' pedido aguardando' : ' pedidos aguardando') + ' pagamento. Conclua o pagamento ou cancele um deles em "Meus pedidos" para fazer outro.';
+      if (Number(LIM.pedidosDia) && (usage().pedidos || 0) >= Number(LIM.pedidosDia)) return 'Você atingiu o limite de ' + LIM.pedidosDia + ' pedidos por dia. Tente de novo amanhã ou fale com a gente no WhatsApp.';
+      return '';
+    },
+    searchLimitHtml() {
+      const c = cloud();
+      const more = c.enabled && !c.user && Number(LIM.buscasDiaConta) > searchMax();
+      return '<div class="panel panel-pad limit-box"><span class="tile-icon">' + icon('info') + '</span><div class="grow">' +
+        '<h3>Você usou as ' + searchMax() + ' buscas grátis de hoje</h3>' +
+        '<p class="muted">Amanhã você ganha novas buscas.' + (more ? ' Com a conta grátis são <b>' + LIM.buscasDiaConta + ' buscas por dia</b>.' : '') + ' Se preferir, a nossa equipe procura por você e explica o resultado no WhatsApp.</p>' +
+        '<div class="btn-row">' + (ativo() ? '<a class="btn btn-primary" href="#/pesquisa-diario">' + icon('sparkle') + 'Nós procuramos para você · ' + brl(menorPreco()) + '</a>' : '') +
+        (more ? '<a class="btn" href="#/entrar/cadastro">' + icon('user') + 'Criar conta grátis</a>' : '') + '</div></div></div>';
+    }
+  };
+  A.limits = Limits;
+
   function waMessage(p) {
     return [
-      'Olá! Fiz o pedido *' + p.codigo + '* da Pesquisa no Diário Oficial (' + brl(p.valor) + ').',
+      'Olá! Fiz o pedido *' + p.codigo + '* — ' + (planoOf(p.plano) || {}).nome + ' no Diário Oficial (' + brl(p.valor) + ').',
       'Nome: ' + p.nome,
       'Concurso: ' + p.concurso + (p.uf ? ' (' + p.uf + ')' : ''),
       p.inscricao ? 'Inscrição: ' + p.inscricao : '',
@@ -50,8 +99,9 @@
   }
 
   async function createOrder(f) {
+    const plano = planoOf(f.plano);
     const p = {
-      codigo: newCode(), servico: 'diario', valor: Number(SV.preco), status: 'aguardando', criadoEm: new Date().toISOString(),
+      codigo: newCode(), servico: 'diario', plano: plano.id, valor: plano.preco, status: 'aguardando', criadoEm: new Date().toISOString(),
       nome: f.nome, whatsapp: f.whatsapp, uf: f.uf, concurso: f.concurso, inscricao: f.inscricao, rg: f.rg, desde: f.desde, obs: f.obs
     };
     const c = cloud();
@@ -61,6 +111,7 @@
       await c.set('pedidos', p.codigo, p);
     }
     Store.update((s) => { s.pedidos = (Array.isArray(s.pedidos) ? s.pedidos : []).concat([p]).slice(-30); });
+    bump('pedidos');
     return p;
   }
 
@@ -86,10 +137,11 @@
   function orderRow(p) {
     const st = STATUS[p.status] || STATUS.aguardando;
     return '<div class="row order-row"><span class="tile-icon">' + icon('newspaper') + '</span>' +
-      '<div class="grow"><div class="title">Pesquisa no Diário · ' + esc(p.codigo) + '</div>' +
+      '<div class="grow"><div class="title">' + esc(p.plano === 'acompanhamento' ? 'Acompanhamento no Diário' : 'Pesquisa no Diário') + ' · ' + esc(p.codigo) + '</div>' +
       '<div class="sub">' + esc(p.concurso || '') + (p.uf ? ' · ' + esc(p.uf) : '') + ' · ' + esc(fmtDate(String(p.criadoEm).slice(0, 10))) + ' · ' + brl(p.valor) + '</div></div>' +
       '<span class="badge ' + st[0] + '">' + st[1] + '</span>' +
       (p.status === 'aguardando' && WA ? '<a class="btn btn-sm" href="' + esc(waLink(waMessage(p))) + '" target="_blank" rel="noopener">' + icon('chat') + 'Enviar comprovante</a>' : '') +
+      (p.status === 'aguardando' ? '<button class="btn btn-sm btn-ghost" type="button" data-cancel="' + esc(p.codigo) + '">Cancelar</button>' : '') +
       '</div>';
   }
 
@@ -102,6 +154,21 @@
     };
     draw();
     refreshStatuses().then((ch) => { if (ch && document.body.contains(el)) draw(); });
+    if (el.dataset.bound) return;
+    el.dataset.bound = '1';
+    el.addEventListener('click', async (ev) => {
+      const b = ev.target.closest('[data-cancel]'); if (!b) return;
+      if (!confirm('Cancelar o pedido ' + b.dataset.cancel + '? Se você já pagou, fale com a gente no WhatsApp em vez de cancelar.')) return;
+      const code = b.dataset.cancel;
+      const c = cloud();
+      try {
+        if (c.enabled && c.user) await c.update('pedidos', code, { status: 'cancelado', atualizadoEm: new Date().toISOString() });
+      } catch (e) { console.error(e); toast('Não foi possível cancelar agora. Tente de novo.'); return; }
+      Store.update((s) => { (s.pedidos || []).forEach((p) => { if (p.codigo === code) p.status = 'cancelado'; }); });
+      if (last && last.codigo === code) last = null;
+      toast('Pedido ' + code + ' cancelado.');
+      draw();
+    });
   }
 
   /* ---------- Página do serviço ---------- */
@@ -142,12 +209,22 @@
       ['chat', 'Resultado explicado no WhatsApp', 'Os links das publicações com a página onde seu nome aparece e o que fazer em seguida, com os prazos.'],
       ['check', 'Sem publicação ainda?', 'Você recebe a lista de onde procuramos e como acompanhar as próximas publicações.']
     ];
-    const steps = ['Preencha seus dados', 'Pague ' + brl(SV.preco) + ' no Pix', 'Envie o comprovante no WhatsApp', 'Receba o resultado ' + SV.prazo];
+    const steps = ['Preencha seus dados', 'Pague no Pix (o código do pedido já vai junto)', 'Envie o comprovante no WhatsApp', 'Receba o resultado ' + SV.prazo];
+    const planos = PLANOS();
+    const planoSel = (planoOf(draft.plano) || planos[0]).id;
+    const planPick = planos.length > 1
+      ? '<div class="plan-pick full" role="radiogroup" aria-label="Escolha o plano">' + planos.map((x) => '<label class="plan"><input type="radio" name="plano" value="' + x.id + '"' + (x.id === planoSel ? ' checked' : '') + '>' +
+          '<span class="plan-top"><b>' + esc(x.nome) + '</b><span class="plan-price">' + brl(x.preco) + '</span></span><small>' + esc(x.resumo) + '</small></label>').join('') + '</div>'
+      : '<input type="hidden" name="plano" value="' + planos[0].id + '">';
+    const scope = '<div class="panel panel-pad scope"><span class="eyebrow">' + icon('clipboard') + 'O que está incluído</span>' +
+      '<ul class="scope-list ok">' + INCLUI.map((x) => '<li>' + icon('check') + esc(x) + '</li>').join('') + '</ul>' +
+      '<span class="eyebrow" style="margin-top:12px">' + icon('x') + 'Não está incluído</span>' +
+      '<ul class="scope-list no">' + NAO_INCLUI.map((x) => '<li>' + icon('x') + esc(x) + '</li>').join('') + '</ul></div>';
 
     const intro =
-      '<div class="page-head service-head"><div><span class="eyebrow">' + icon('sparkle') + 'Serviço Atlas · ' + brl(SV.preco) + '</span>' +
+      '<div class="page-head service-head"><div><span class="eyebrow">' + icon('sparkle') + 'Serviço Atlas · ' + (PLANOS().length > 1 ? 'a partir de ' : '') + brl(menorPreco()) + '</span>' +
       '<h1>Nós procuramos <span class="grad-text">seu nome no Diário Oficial</span></h1>' +
-      '<p>Convocação, resultado, exame médico, nomeação: as publicações saem em PDFs enormes e é fácil perder um prazo. Você faz o pedido, paga ' + brl(SV.preco) + ' no Pix e recebe no WhatsApp tudo o que encontramos.</p></div></div>';
+      '<p>Convocação, resultado, exame médico, nomeação: as publicações saem em PDFs enormes e é fácil perder um prazo. Você faz o pedido, paga ' + brl(menorPreco()) + ' no Pix e recebe no WhatsApp tudo o que encontramos.</p></div></div>';
 
     if (!ativo()) {
       return {
@@ -158,7 +235,7 @@
 
     const form =
       '<form class="panel panel-pad service-form" id="order-form" autocomplete="on" novalidate>' +
-        '<h2 style="font-size:18px">Fazer meu pedido</h2>' +
+        '<h2 style="font-size:18px">Fazer meu pedido</h2>' + planPick +
         '<label class="field full">Nome completo *<input class="input" name="nome" required maxlength="90" value="' + v('nome', prof.nome || watch.nome || Store.state.profile.nome) + '" placeholder="Como está no documento" autocomplete="name"></label>' +
         '<label class="field">WhatsApp para receber o resultado *<input class="input" name="whatsapp" type="tel" inputmode="tel" required value="' + v('whatsapp', prof.whatsapp ? c.fmtWhats(prof.whatsapp) : '') + '" placeholder="(11) 91234-5678" autocomplete="tel"></label>' +
         '<label class="field">Estado do concurso *<select class="select" name="uf" required><option value="">Selecione…</option><option value="BR"' + (ufSel === 'BR' ? ' selected' : '') + '>Federal (União)</option>' +
@@ -171,7 +248,7 @@
         '<label class="check full"><input type="checkbox" name="lgpd" required' + (draft.lgpd ? ' checked' : '') + '> Autorizo o Atlas a usar estes dados somente para fazer esta pesquisa e falar comigo no WhatsApp (<a class="grad-text" href="privacidade.html" target="_blank" rel="noopener">privacidade</a>).</label>' +
         '<p class="badge danger full auth-error" id="order-error" hidden></p>' +
         (needLogin ? '<p class="muted small full">' + icon('user', 'i-inline') + ' Para acompanhar o pedido, você vai entrar ou criar sua conta grátis em seguida. Seus dados preenchidos ficam guardados.</p>' : '') +
-        '<button class="btn btn-primary btn-lg full" type="submit">' + icon('check') + 'Fazer pedido · ' + brl(SV.preco) + '</button>' +
+        '<button class="btn btn-primary btn-lg full" type="submit" id="order-submit">' + icon('check') + 'Fazer pedido · ' + brl(planoOf(planoSel).preco) + '</button>' +
         '<p class="muted small full">' + icon('shield', 'i-inline') + ' Não pedimos CPF, senha nem dados do cartão. O pagamento é só por Pix' + (hasPix() ? ' para <b>' + esc(A.pix.nome()) + '</b>' : '') + '.</p>' +
       '</form>';
 
@@ -183,6 +260,7 @@
           '<div class="service-info">' +
             '<div class="panel panel-pad"><span class="eyebrow">' + icon('list') + 'Como funciona</span><ol class="steps">' + steps.map((s) => '<li>' + esc(s) + '</li>').join('') + '</ol></div>' +
             '<div class="benefits">' + benefits.map((b) => '<div class="benefit"><span class="tile-icon">' + icon(b[0]) + '</span><div><h3>' + esc(b[1]) + '</h3><p>' + esc(b[2]) + '</p></div></div>').join('') + '</div>' +
+            scope +
           '</div>' +
           '<div id="order-box">' + (last ? payPanel(last) : form) + '</div>' +
         '</div>' +
@@ -203,6 +281,10 @@
         if (!f) return;
         const errBox = $('#order-error', view);
         const fail = (m) => { errBox.textContent = m; errBox.hidden = false; errBox.scrollIntoView({ block: 'center', behavior: 'smooth' }); };
+        f.addEventListener('change', (ev) => {
+          if (ev.target.name !== 'plano') return;
+          $('#order-submit', view).innerHTML = icon('check') + 'Fazer pedido · ' + brl(planoOf(ev.target.value).preco);
+        });
         f.addEventListener('submit', async (ev) => {
           ev.preventDefault();
           errBox.hidden = true;
@@ -215,6 +297,8 @@
           if (d.concurso.length < 3) return fail('Informe o concurso e o cargo.');
           if (!d.lgpd) return fail('Para fazer o pedido, marque a autorização de uso dos dados.');
           d.whatsapp = whats;
+          const blocked = Limits.orderBlock();
+          if (blocked) return fail(blocked);
           if (c.enabled) {
             await c.whenReady();
             if (!c.user) {
@@ -248,7 +332,7 @@
     if (!ativo()) return '';
     return '<a class="panel promo-diario" href="#/pesquisa-diario"><span class="tile-icon">' + icon('sparkle') + '</span>' +
       '<div class="grow"><b>Não quer procurar sozinho? Nós procuramos para você.</b><span>Diário Oficial, órgão e banca · resultado explicado no WhatsApp ' + esc(SV.prazo) + '.</span></div>' +
-      '<span class="btn btn-primary btn-sm">' + brl(SV.preco) + ' · Pedir</span></a>';
+      '<span class="btn btn-primary btn-sm">' + brl(menorPreco()) + ' · Pedir</span></a>';
   }
 
   /* =========================================================
@@ -315,5 +399,5 @@
   }
   A.afterRender.push((view, cur) => { if (cur.name === 'concursos' || cur.name === 'conta') flushPending(); });
 
-  A.services = { renderOrders, promo, price: () => SV.preco, prazo: () => SV.prazo, active: ativo, brl, AVISOS, eventDates, syncReminder, removeReminder, whatsapp: () => WA };
+  A.services = { renderOrders, promo, price: menorPreco, planos: PLANOS, inclui: INCLUI, naoInclui: NAO_INCLUI, limits: LIM, prazo: () => SV.prazo, active: ativo, brl, AVISOS, eventDates, syncReminder, removeReminder, whatsapp: () => WA };
 })();

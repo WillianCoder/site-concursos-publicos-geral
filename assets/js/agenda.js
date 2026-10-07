@@ -72,6 +72,7 @@
           (l.edital ? A.extLink(l.edital, 'chip', icon('note') + 'Edital') : '') +
           (l.area ? '<a class="chip" href="' + esc(l.area) + '" target="_blank" rel="noopener">' + icon('user') + 'Área do candidato</a>' : '') +
           (l.banca ? '<a class="chip" href="' + esc(l.banca) + '" target="_blank" rel="noopener">' + icon('clipboard') + 'Na banca' + (l.bancaNome ? ' (' + esc(l.bancaNome) + ')' : '') + '</a>' : '') +
+          (A.shareWa ? '<a class="chip" href="' + esc(A.shareWa('Inscrições abertas: ' + x.orgao + (x.cargo ? ' — ' + x.cargo : '') + ' até ' + fmt(x.inscFim), '#/radar')) + '" target="_blank" rel="noopener">' + icon('chat') + 'Compartilhar</a>' : '') +
         '</div></div>' +
       '<div class="ag-side"><span class="badge ' + tone + '">' + (fim === 0 ? 'Último dia!' : 'Encerra em ' + plural(fim, 'dia')) + '</span><div class="ag-actions">' +
         (A.safeUrl(x.site) ? A.extLink(x.site, 'btn btn-sm btn-primary', 'Inscrever-se') : (l.edital ? A.extLink(l.edital, 'btn btn-sm btn-primary', 'Ver edital') : '')) +
