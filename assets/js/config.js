@@ -10,7 +10,11 @@ window.ATLAS_CONFIG = {
   "ads": { "client": "", "slots": { "sidebar": "", "feed": "", "footer": "" } },
   "pix": { "chave": "", "nome": "", "cidade": "", "valores": [5, 10, 20, 50] },
   "contato": { "email": "", "whatsapp": "5511911482873" },
-  "servicos": { "diario": { "ativo": true, "preco": 15, "prazo": "em até 2 dias úteis" } },
+  "servicos": {
+    "diario": { "ativo": true, "preco": 15, "prazo": "em até 2 dias úteis" },
+    "acompanhamento": { "ativo": false, "preco": 39, "semanas": 4 }
+  },
+  "limites": { "buscasDia": 5, "buscasDiaConta": 15, "lembretes": 3, "pedidosAbertos": 2, "pedidosDia": 3 },
   "pacotes": [
     { "nome": "Destaque em categoria", "preco": "R$ 49/semana", "desc": "Seu card no topo de uma categoria (ex.: Estudo Gratuito, Bancas, Legislação).", "ideal": "Cursinhos, editoras, professores" },
     { "nome": "Destaque no estado", "preco": "R$ 99/mês", "desc": "Card patrocinado no hub de um estado (ex.: Minas Gerais), visto por quem presta concursos ali.", "ideal": "Cursinhos regionais e preparatórios para PM/PC" },

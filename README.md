@@ -54,6 +54,23 @@ O passo a passo completo está no Painel, aba **Avançado**. Resumo:
 - **Pesquisa no Diário Oficial** (`#/pesquisa-diario`): o candidato preenche nome, WhatsApp, estado e concurso, recebe um **código de pedido** e o **Pix com o valor e o código** (QR Code e copia e cola), e envia o comprovante no WhatsApp com a mensagem pronta. Preço, prazo e ativação ficam no Painel (*Pix, serviços e contato*). Com contas ativas, o pedido exige login e aparece no Painel, aba **Pedidos**, onde você muda a situação (aguardando → pago → entregue) e responde pelo WhatsApp com um toque.
 - **Lembretes no WhatsApp** (`#/concursos`): ao cadastrar um concurso, o candidato pode pedir avisos (fim das inscrições, 7 dias e véspera da prova, dia do resultado). Na aba **Lembretes de hoje** do Painel, cada aviso do dia vem com a mensagem pronta para enviar no WhatsApp.
 
+## Limites de uso
+
+Configuráveis no Painel, aba **Limites de uso** (`limites` no `config.js`, 0 = sem limite; contadores zeram à meia-noite):
+
+| Limite | Padrão |
+|---|---|
+| Buscas grátis por dia no "Meu nome no Diário" (visitante / com conta) | 5 / 15 |
+| Pedidos aguardando pagamento por pessoa | 2 |
+| Pedidos por dia por pessoa | 3 |
+| Concursos com lembrete no WhatsApp por pessoa | 3 |
+
+Cada pedido da Pesquisa no Diário cobre 1 pessoa, 1 concurso, o Diário Oficial do estado e da União, o site do órgão e da banca e os últimos 12 meses (escrito na página do serviço e nos termos). O plano **Acompanhamento** (`servicos.acompanhamento`) fica desligado até você ativar no Painel.
+
+## Google e compartilhamento
+
+O build (`scripts/build-site.sh`) roda `scripts/seo-pages.mjs`, que gera `estados/<uf>.html` (uma página por estado com os sites oficiais e as inscrições abertas do dia), `estados/index.html`, `sitemap.xml` e os endereços absolutos da imagem de prévia (`assets/img/og.png`). O endereço vem da variável `SITE_URL`, do `siteUrl` do `config.js` ou, por padrão, `https://atlas-concursos.pages.dev/`. Como o robô do Radar publica todo dia, essas páginas se atualizam sozinhas. A apresentação para clientes fica em `assets/docs/atlas-concursos-apresentacao.pdf` (link na página "Anuncie").
+
 ## Painel do Administrador (`/admin.html`)
 
 Edite a **Agenda de Inscrições**, **Pix, serviços, contato, patrocínios (com período, posição e prévia), links de afiliado, dicas patrocinadas, preços, AdSense e Firebase** e acompanhe **pedidos, usuários e lembretes** pelo navegador — no computador ou no celular — sem mexer em código.

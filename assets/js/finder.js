@@ -95,7 +95,7 @@
               A.bancas.list.map((b) => '<option value="' + esc(b.host) + '"' + (form.banca === b.host ? ' selected' : '') + '>' + esc(b.n) + '</option>').join('') + '</select></label>' +
             '<label class="field full"><span>Palavra-chave do concurso <span class="muted">(opcional)</span></span><input class="input" id="f-extra" name="extra" value="' + esc(form.extra) + '" placeholder="Ex.: soldado, CFSd 2026, escrevente"></label>' +
             '<div class="btn-row full"><button class="btn btn-primary" type="submit">' + icon('search') + 'Montar minhas buscas</button>' +
-              '<button class="btn" type="button" id="f-save">' + icon('star') + 'Salvar para buscar de novo</button></div>' +
+              '<button class="btn" type="button" id="f-save">' + icon('star') + 'Salvar para buscar de novo</button><span class="muted small" id="finder-left"></span></div>' +
             '<p class="muted small full">' + icon('shield', 'i-inline') + ' Seus dados ficam só neste aparelho. Ao tocar em "Buscar", o termo vai para o site escolhido como qualquer pesquisa. O CPF completo nunca é usado: os diários mostram só o meio dele (***.456.789-**).</p>' +
           '</form>' +
           '<div id="finder-out" class="finder-out"></div>' +
@@ -192,7 +192,25 @@
           if (window.innerWidth < 900) out.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
-        $('#finder-form', view).addEventListener('submit', (ev) => { ev.preventDefault(); build(); });
+        // Cada "Montar minhas buscas" conta uma busca grátis do dia (limite definido no Painel).
+        const left = $('#finder-left', view);
+        const showLeft = () => {
+          if (!left || !A.limits) return;
+          const n = A.limits.searchLeft();
+          left.textContent = n === Infinity ? '' : n + (n === 1 ? ' busca grátis restante hoje' : ' buscas grátis restantes hoje');
+        };
+        showLeft();
+        $('#finder-form', view).addEventListener('submit', (ev) => {
+          ev.preventDefault();
+          if (A.limits && !A.limits.useSearch()) {
+            out.innerHTML = A.limits.searchLimitHtml();
+            A.hydrateIcons(out);
+            out.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            return;
+          }
+          showLeft();
+          build();
+        });
         $('#f-uf', view).addEventListener('change', (ev) => {
           read(); form.uf = ev.target.value; form.org = ''; if (!form.rgUf) form.rgUf = form.uf;
           const next = '#/meu-nome' + (form.uf ? '/' + form.uf : '');
