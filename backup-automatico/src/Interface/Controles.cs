@@ -553,6 +553,7 @@ namespace BackupAutomatico.Interface
                     f.Controls.Add(rolagem);
                     conteudo.Parent = rolagem;
                     rolagem.HandleCreated += (s, e) => Nativo.TemaRolagem(rolagem.Handle, P.Escuro);
+                    if (rolagem.IsHandleCreated) Nativo.TemaRolagem(rolagem.Handle, P.Escuro);
                 }
                 rolagem.SetBounds(margem, margem, tam.Width + barra + S(4), maxConteudo);
                 conteudo.Location = Point.Empty;

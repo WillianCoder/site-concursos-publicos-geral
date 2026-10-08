@@ -126,7 +126,7 @@ namespace BackupAutomatico.Interface
 
             // Quando
             Titulo("Quando fazer o backup");
-            Linha("Frequência", Fluxo(false, Rotulo("A cada", Base), valor, unidade));
+            Linha("Frequência", Fluxo(false, Meio("A cada"), valor, unidade));
             rotDia = Rotulo("Dia e horário", Base, "suave");
             rotDia.Anchor = AnchorStyles.Left;
             rotDia.Margin = new Padding(0, S(4), S(14), S(4));
@@ -225,6 +225,13 @@ namespace BackupAutomatico.Interface
             Shown += (s, e) => { if (Programa.ModoCaptura) Programa.Capturar(this, novo ? "janela-novo-backup" : "janela-editar-backup"); };
         }
 
+        static Label Meio(string texto)
+        {
+            var l = Rotulo(texto, Base);
+            l.Margin = new Padding(0, S(12), S(6), 0);
+            return l;
+        }
+
         string Escolher(string descricao, string inicial)
         {
             using (var fb = new FolderBrowserDialog { Description = descricao, ShowNewFolderButton = true })
@@ -239,13 +246,13 @@ namespace BackupAutomatico.Interface
             linhaDia.SuspendLayout();
             linhaDia.Controls.Clear();
             string u = unidade.Selecionado;
-            var hm = new Control[] { Rotulo("às", Base), hora, Rotulo(":", Base), minuto };
+            var hm = new Control[] { Meio("às"), hora, Meio(":"), minuto };
             switch (u)
             {
                 case "dias": linhaDia.Controls.AddRange(hm); break;
                 case "semanas": linhaDia.Controls.Add(diaSemana); linhaDia.Controls.AddRange(hm); break;
-                case "meses": linhaDia.Controls.Add(Rotulo("No dia", Base)); linhaDia.Controls.Add(diaMes); linhaDia.Controls.AddRange(hm); break;
-                case "anos": linhaDia.Controls.Add(Rotulo("Em", Base)); linhaDia.Controls.Add(diaMes); linhaDia.Controls.Add(Rotulo("de", Base)); linhaDia.Controls.Add(mes); linhaDia.Controls.AddRange(hm); break;
+                case "meses": linhaDia.Controls.Add(Meio("No dia")); linhaDia.Controls.Add(diaMes); linhaDia.Controls.AddRange(hm); break;
+                case "anos": linhaDia.Controls.Add(Meio("Em")); linhaDia.Controls.Add(diaMes); linhaDia.Controls.Add(Meio("de")); linhaDia.Controls.Add(mes); linhaDia.Controls.AddRange(hm); break;
             }
             bool visivel = u != "minutos" && u != "horas";
             linhaDia.Visible = rotDia.Visible = visivel;

@@ -108,7 +108,8 @@ namespace BackupAutomatico.Interface
 
         public static Control Cabecalho(string glifo, string titulo, string texto, Color cor)
         {
-            var icone = new Label { Text = Tema.TemIcones ? glifo : "", Font = Icones(18f), ForeColor = cor, AutoSize = true, Margin = new Padding(0, S(2), S(10), 0), UseMnemonic = false };
+            string papel = cor == P.Erro ? "erro" : cor == P.Pro ? "pro" : "destaque";
+            var icone = new Label { Text = Tema.TemIcones ? glifo : "", Font = Icones(18f), ForeColor = cor, Tag = papel, AutoSize = true, Margin = new Padding(0, S(2), S(10), 0), UseMnemonic = false };
             var t = Rotulo(titulo, Titulo);
             t.Margin = new Padding(0, 0, 0, 0);
             var s = Rotulo(texto, Base, "suave", S(520));

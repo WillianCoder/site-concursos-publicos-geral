@@ -52,6 +52,7 @@ namespace BackupAutomatico.Interface
             // Cabeçalho
             cabecalho.Height = S(84);
             cabecalho.Paint += PintarCabecalho;
+            cabecalho.Resize += (s, e) => AjustarCabecalho();
             acoes.Padding = new Padding(0, S(24), S(20), 0);
             btnAdicionar = new Botao("Adicionar pasta", EstiloBotao.Primario, G.Adicionar) { Margin = new Padding(S(8), 0, 0, 0) };
             btnConfig = new Botao("", EstiloBotao.Fantasma, G.Config) { SoIcone = true, Margin = new Padding(S(4), 0, 0, 0) };
@@ -157,8 +158,7 @@ namespace BackupAutomatico.Interface
             btnConta.Text = Conta.Logado ? Abreviar(Conta.Email, 26) : "Entrar";
             btnPro.Visible = Conta.Plano == Plano.Gratis;
             btnAdmin.Visible = Conta.Plano == Plano.Admin;
-            acoes.PerformLayout();
-            cabecalho.Invalidate();
+            AjustarCabecalho();
             miPausarTodos.Checked = Cfg.PausaGeral;
 
             // Cartões
@@ -185,6 +185,21 @@ namespace BackupAutomatico.Interface
             lista.Visible = !vazio;
             AtualizarStatus();
             AtualizarBandeja();
+        }
+
+        void AjustarCabecalho()
+        {
+            // Em janelas estreitas, "Entrar" e "Apoiar" viram só ícones para o título caber.
+            int precisa = S(22 + 44 + 14) + TextRenderer.MeasureText("Backup Automático", Titulo).Width + S(90);
+            foreach (var b in new[] { btnConta, btnApoiar }) b.SoIcone = false;
+            acoes.PerformLayout();
+            if (cabecalho.Width - acoes.PreferredSize.Width < precisa)
+            {
+                foreach (var b in new[] { btnConta, btnApoiar }) b.SoIcone = true;
+                dicas.SetToolTip(btnConta, Conta.Logado ? Conta.Email : "Entrar");
+                acoes.PerformLayout();
+            }
+            cabecalho.Invalidate();
         }
 
         void PosicionarCartoes()
@@ -278,13 +293,16 @@ namespace BackupAutomatico.Interface
             int x = S(22), tam = S(44);
             g.DrawImage(Tema.Logo, new Rectangle(x, (cabecalho.Height - tam) / 2, tam, tam));
             x += tam + S(14);
+            int livre = Math.Max(S(60), acoes.Left - x - S(12));
             var tt = TextRenderer.MeasureText("Backup Automático", Titulo);
-            Tema.Texto(g, "Backup Automático", Titulo, new Rectangle(x, S(14), tt.Width + 4, S(32)), P.Texto);
+            int largTitulo = Math.Min(tt.Width + 4, livre);
+            Tema.Texto(g, "Backup Automático", Titulo, new Rectangle(x, S(14), largTitulo, S(32)), P.Texto, TextFormatFlags.EndEllipsis);
             string plano = Conta.NomePlano(Conta.Plano);
             Color cor = Conta.Plano == Plano.Admin ? P.Destaque : Conta.Plano == Plano.Pro ? P.Pro : P.TextoSuave;
             Color fundo = Conta.Plano == Plano.Admin ? P.DestaqueSuave : Conta.Plano == Plano.Pro ? P.ProSuave : P.Hover;
-            Pilula.Desenhar(g, plano, Pequena, new Point(x + tt.Width + S(6), S(20)), cor, fundo, false);
-            Tema.Texto(g, "Arraste uma pasta para esta janela e ela passa a ter backup automático.", Base, new Rectangle(x, S(46), S(600), S(22)), P.TextoSuave, TextFormatFlags.EndEllipsis);
+            if (largTitulo + S(6) + Pilula.Largura(plano, Pequena, false) <= livre)
+                Pilula.Desenhar(g, plano, Pequena, new Point(x + largTitulo + S(6), S(20)), cor, fundo, false);
+            Tema.Texto(g, "Arraste uma pasta para esta janela e ela passa a ter backup automático.", Base, new Rectangle(x, S(46), livre, S(22)), P.TextoSuave, TextFormatFlags.EndEllipsis);
         }
 
         void PintarRodape(object s, PaintEventArgs e)
