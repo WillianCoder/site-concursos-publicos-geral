@@ -48,23 +48,6 @@ jobs:
           if (Test-Path (Join-Path $env:BACKUPAUTO_DADOS 'erros.log')) { Get-Content (Join-Path $env:BACKUPAUTO_DADOS 'erros.log') }
           if ($p.ExitCode -ne 0 -or $copiados -ne 6) { Write-Host 'Teste das telas FALHOU.'; exit 1 }
           Write-Host 'Teste das telas OK.'
-      - name: Imagens em texto (temporario)
-        if: always()
-        shell: pwsh
-        run: |
-          Add-Type -AssemblyName System.Drawing
-          $codec = [System.Drawing.Imaging.ImageCodecInfo]::GetImageEncoders() | Where-Object MimeType -eq 'image/jpeg'
-          $par = New-Object System.Drawing.Imaging.EncoderParameters 1
-          $par.Param[0] = New-Object System.Drawing.Imaging.EncoderParameter ([System.Drawing.Imaging.Encoder]::Quality), 72L
-          Get-ChildItem (Join-Path $env:RUNNER_TEMP 'telas') -Filter *.png | Sort-Object Name | ForEach-Object {
-            $img = [System.Drawing.Image]::FromFile($_.FullName)
-            $ms = New-Object System.IO.MemoryStream
-            $img.Save($ms, $codec, $par); $img.Dispose()
-            $b = [Convert]::ToBase64String($ms.ToArray())
-            Write-Host "=====INICIO $($_.BaseName).jpg"
-            for ($i = 0; $i -lt $b.Length; $i += 8000) { Write-Host ('B64:' + $b.Substring($i, [Math]::Min(8000, $b.Length - $i))) }
-            Write-Host "=====FIM $($_.BaseName).jpg"
-          }
       - name: Guardar o programa e as imagens das telas
         if: always()
         uses: actions/upload-artifact@v4
