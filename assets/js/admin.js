@@ -822,7 +822,24 @@
       "      allow update, delete: if isAdmin();\n    }\n\n" +
       "    // Lembretes no WhatsApp: o dono e o administrador.\n    match /lembretes/{id} {\n" +
       "      allow create, update: if isAdmin() || (signedIn() && request.resource.data.uid == request.auth.uid && (resource == null || resource.data.uid == request.auth.uid));\n" +
-      "      allow read, delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);\n    }\n  }\n}\n";
+      "      allow read, delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);\n    }\n" +
+      "\n" +
+      "    // Backup Automático (programa para Windows).\n" +
+      "    // Configuração pública (Pix, preços, limite grátis): todos leem, só o administrador altera.\n" +
+      "    match /backupApp/{doc} { allow read: if true; allow write: if isAdmin(); }\n" +
+      "\n" +
+      "    // Licença Pro de cada conta: o dono lê a sua; só o administrador cria ou altera.\n" +
+      "    match /backupLicencas/{uid} { allow read: if isOwner(uid) || isAdmin(); allow write: if isAdmin(); }\n" +
+      "\n" +
+      "    // Pedidos do Pro: o cliente cria (aguardando) e lê os seus; só o administrador muda a situação.\n" +
+      "    match /backupPedidos/{id} {\n" +
+      "      allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.status == 'aguardando'\n" +
+      "        && request.resource.data.email == request.auth.token.email\n" +
+      "        && request.resource.data.keys().hasOnly(['uid', 'email', 'plano', 'valor', 'meses', 'codigo', 'status', 'criadoEm']);\n" +
+      "      allow read: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);\n" +
+      "      allow update, delete: if isAdmin();\n" +
+      "    }\n" +
+      "  }\n}\n";
   }
   function firebaseGuide() {
     const hosts = ['atlas-concursos.pages.dev', 'williancoder.github.io'];

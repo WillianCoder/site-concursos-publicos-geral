@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>BackupAutomatico</RootNamespace>
+    <AssemblyName>BackupAutomatico</AssemblyName>
+    <StartupObject>BackupAutomatico.Interface.Programa</StartupObject>
+    <ApplicationIcon>Recursos\app.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Deterministic>true</Deterministic>
+    <PathMap>$(MSBuildProjectDirectory)=C:\src</PathMap>
+    <DebugType>none</DebugType>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <GenerateBindingRedirectsOutputType>false</GenerateBindingRedirectsOutputType>
+    <AutoGenerateBindingRedirects>false</AutoGenerateBindingRedirects>
+    <Version>2.0.0</Version>
+    <Product>Backup Automático</Product>
+    <AssemblyTitle>Backup Automático</AssemblyTitle>
+    <Description>Backups automáticos de qualquer pasta, para qualquer lugar.</Description>
+    <Company>Backup Automático</Company>
+    <Copyright>Backup Automático</Copyright>
+    <NoWarn>CS1998</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Security" />
+    <Reference Include="System.Management" />
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Recursos\*.ico" />
+    <EmbeddedResource Include="Recursos\logo.png" />
+  </ItemGroup>
+</Project>
