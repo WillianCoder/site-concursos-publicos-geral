@@ -60,3 +60,13 @@ select[multiple].select { min-height: 120px; }
   .test-layout { grid-template-columns: 1fr; }
   .test-stage { padding: 8px; }
 }
+
+/* Marca e logo */
+.marca-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.marca { position: relative; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; padding: 16px; cursor: pointer; border: 1.5px solid var(--border); }
+.marca.sel { border-color: transparent; background: linear-gradient(var(--panel-solid), var(--panel-solid)) padding-box, var(--grad) border-box; }
+.marca input { position: absolute; top: 14px; right: 14px; width: 18px; height: 18px; accent-color: var(--c1); }
+.marca img { border-radius: 14px; }
+.marca-nome { font: 700 19px var(--font-display); }
+.marca-nome b { color: var(--c1); }
+.marca-og { width: 100%; max-width: 600px; border-radius: 12px; border: 1px solid var(--border); }

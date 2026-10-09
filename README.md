@@ -54,6 +54,10 @@ O passo a passo completo está no Painel, aba **Avançado**. Resumo:
 - **Pesquisa no Diário Oficial** (`#/pesquisa-diario`): o candidato preenche nome, WhatsApp, estado e concurso, recebe um **código de pedido** e o **Pix com o valor e o código** (QR Code e copia e cola), e envia o comprovante no WhatsApp com a mensagem pronta. Preço, prazo e ativação ficam no Painel (*Pix, serviços e contato*). Com contas ativas, o pedido exige login e aparece no Painel, aba **Pedidos**, onde você muda a situação (aguardando → pago → entregue) e responde pelo WhatsApp com um toque.
 - **Lembretes no WhatsApp** (`#/concursos`): ao cadastrar um concurso, o candidato pode pedir avisos (fim das inscrições, 7 dias e véspera da prova, dia do resultado). Na aba **Lembretes de hoje** do Painel, cada aviso do dia vem com a mensagem pronta para enviar no WhatsApp.
 
+## Marca (nome e logo)
+
+O nome e o logo do site são escolhidos no Painel, aba **Marca e logo** (`marca` no `config.js`). As marcas prontas ficam em `assets/js/marcas.js` e os arquivos de cada uma (logo, imagem de prévia, ícones e PDF de apresentação) em `assets/marcas/<id>/`. O código-fonte continua com "Atlas Concursos"; o build (`scripts/brand.mjs`) troca o nome nos textos e copia os arquivos da marca escolhida. Para voltar ao original, escolha **Atlas Concursos** no Painel e publique.
+
 ## Limites de uso
 
 Configuráveis no Painel, aba **Limites de uso** (`limites` no `config.js`, 0 = sem limite; contadores zeram à meia-noite):
