@@ -15,4 +15,6 @@ cp data/radar.js data/agenda.js _site/data/
 # O endereço vem de SITE_URL (variável do Cloudflare), do siteUrl do config.js
 # ou, por padrão, https://atlas-concursos.pages.dev/.
 node scripts/seo-pages.mjs _site
+# Marca escolhida no Painel (nome, logo, imagem de prévia, ícones e PDF).
+node scripts/brand.mjs _site
 echo "Site montado em _site/ ($(find _site -type f | wc -l) arquivos)"

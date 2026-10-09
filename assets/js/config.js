@@ -28,5 +28,6 @@ window.ATLAS_CONFIG = {
   "dicasPatrocinadas": [],
   "listaEsperaPro": "",
   "firebase": null,
-  "adminEmail": ""
+  "adminEmail": "",
+  "marca": "busquei"
 };

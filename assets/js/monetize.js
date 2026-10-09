@@ -256,7 +256,7 @@
     const mail = contato.email ? 'mailto:' + contato.email + '?subject=' + encodeURIComponent('Anunciar no Atlas Concursos') : '';
     const cta = (wa ? '<a class="btn btn-primary" href="' + esc(wa) + '" target="_blank" rel="noopener">' + icon('chat') + 'Falar no WhatsApp</a>' : '') +
       (mail ? '<a class="btn" href="' + esc(mail) + '">' + icon('note') + 'Enviar e-mail</a>' : '') +
-      '<a class="btn" href="assets/docs/atlas-concursos-apresentacao.pdf" target="_blank" rel="noopener">' + icon('download') + 'Apresentação (PDF)</a>';
+      '<a class="btn" href="assets/docs/apresentacao.pdf" target="_blank" rel="noopener">' + icon('download') + 'Apresentação (PDF)</a>';
     const want = (p) => contato.whatsapp ? 'https://wa.me/' + String(contato.whatsapp).replace(/\D/g, '') + '?text=' + encodeURIComponent('Olá! Quero anunciar no Atlas Concursos com o pacote "' + p.nome + '" (' + p.preco + '). Meu negócio é: ') : '';
     return {
       title: 'Anuncie no Atlas',

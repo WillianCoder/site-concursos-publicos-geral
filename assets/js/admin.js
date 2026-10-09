@@ -16,6 +16,7 @@
   const LOCAL = window.ATLAS_CONFIG || {};
   const DATA = window.ATLAS_DATA || { categorias: [], estados: [] };
   const RADAR = window.ATLAS_RADAR || { items: [] };
+  const MARCAS = window.ATLAS_MARCAS || [{ id: 'atlas', nome: 'Atlas Concursos', p1: 'Atlas', p2: 'Concursos', desc: '' }];
 
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => Array.from(el.querySelectorAll(s));
@@ -86,6 +87,7 @@
     c.servicos = c.servicos || {};
     c.servicos.diario = Object.assign({ ativo: true, preco: 15, prazo: 'em até 2 dias úteis' }, c.servicos.diario || {});
     c.servicos.acompanhamento = Object.assign({ ativo: false, preco: 39, semanas: 4 }, c.servicos.acompanhamento || {});
+    if (typeof c.marca !== 'string') c.marca = 'atlas';
     c.limites = Object.assign({ buscasDia: 5, buscasDiaConta: 15, lembretes: 3, pedidosAbertos: 2, pedidosDia: 3 }, c.limites || {});
     return c;
   }
@@ -181,6 +183,7 @@
     if (!(Number(cfg.servicos.diario.preco) > 0)) e.push('Pesquisa no Diário: informe o preço (ex.: 15)');
     if (cfg.servicos.acompanhamento.ativo && !(Number(cfg.servicos.acompanhamento.preco) > 0 && Number(cfg.servicos.acompanhamento.semanas) >= 1)) e.push('Acompanhamento: informe o preço e o número de semanas');
     Object.keys(cfg.limites).forEach((k) => { const v = cfg.limites[k]; if (!(Number.isInteger(Number(v)) && Number(v) >= 0 && Number(v) <= 1000)) e.push('Limites: use números inteiros de 0 a 1000 (0 = sem limite)'); });
+    if (!MARCAS.some((m) => m.id === cfg.marca)) e.push('Marca: escolha uma das marcas da aba "Marca e logo"');
     if (cfg.adminEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cfg.adminEmail)) e.push('E-mail do administrador inválido');
     cfg.patrocinios.forEach((p) => { if (p.inicio && p.ate && p.inicio > p.ate) e.push('Patrocínio "' + (p.titulo || '?') + '": o início está depois do fim'); });
     if (cfg.ads.client && !/^ca-pub-\d{10,20}$/.test(cfg.ads.client)) e.push('AdSense: o ID deve ter o formato ca-pub-0000000000000000');
@@ -344,7 +347,7 @@
   }
 
   /* ---------- Abas ---------- */
-  const TABS = [['geral', 'Visão geral'], ['pedidos', 'Pedidos'], ['lembretes', 'Lembretes de hoje'], ['usuarios', 'Usuários'], ['agenda', 'Concursos abertos'], ['pix', 'Pix, serviços e contato'], ['limites', 'Limites de uso'], ['patrocinios', 'Patrocínios'], ['teste', 'Testar anúncios'], ['recomendados', 'Afiliados e dicas'], ['pacotes', 'Preços (Anuncie)'], ['anuncios', 'AdSense e Pro'], ['avancado', 'Avançado']];
+  const TABS = [['geral', 'Visão geral'], ['pedidos', 'Pedidos'], ['lembretes', 'Lembretes de hoje'], ['usuarios', 'Usuários'], ['agenda', 'Concursos abertos'], ['pix', 'Pix, serviços e contato'], ['limites', 'Limites de uso'], ['patrocinios', 'Patrocínios'], ['teste', 'Testar anúncios'], ['recomendados', 'Afiliados e dicas'], ['pacotes', 'Preços (Anuncie)'], ['anuncios', 'AdSense e Pro'], ['marca', 'Marca e logo'], ['avancado', 'Avançado']];
 
   function viewGeral() {
     const ativos = cfg.patrocinios.filter((p) => (!p.inicio || p.inicio <= today()) && (!p.ate || p.ate >= today()));
@@ -883,6 +886,21 @@ service cloud.firestore {
       '<div><button class="btn" id="adm-rules-copy" type="button">Copiar regras</button></div></details>';
   }
 
+  /* ---------- Marca (nome e logo) ---------- */
+  function viewMarca() {
+    const atual = MARCAS.find((m) => m.id === cfg.marca) || MARCAS[0];
+    return '<p class="adm-help">Escolha o nome e o logo do site. A troca vale para o site inteiro (títulos, textos, logo, ícone do app, imagem de prévia no WhatsApp e PDF de apresentação) e entra no ar cerca de 1 minuto depois de <b>Salvar e publicar</b>. Para voltar, é só escolher outra marca e publicar de novo — nada é apagado.</p>' +
+      '<div class="marca-grid">' + MARCAS.map((m) => '<label class="panel marca' + (m.id === cfg.marca ? ' sel' : '') + '">' +
+        '<input type="radio" name="marca" value="' + esc(m.id) + '"' + (m.id === cfg.marca ? ' checked' : '') + '>' +
+        '<img src="assets/marcas/' + esc(m.id) + '/logo.svg" alt="" width="64" height="64">' +
+        '<span class="marca-nome">' + esc(m.p1) + '<b>' + esc(m.p2) + '</b></span>' +
+        '<span class="adm-help">' + esc(m.desc || '') + '</span>' +
+        (m.id === cfg.marca ? '<span class="badge ok">Escolhida</span>' : '') + '</label>').join('') + '</div>' +
+      '<div class="panel panel-pad section adm-section"><h2 style="font-size:17px">Prévia do link no WhatsApp</h2>' +
+        '<img class="marca-og" src="assets/marcas/' + esc(atual.id) + '/og.png" alt="Imagem de prévia da marca ' + esc(atual.nome) + '">' +
+        '<p class="adm-help">O endereço do site (atlas-concursos.pages.dev) continua o mesmo. Se trocar de vez, registre o domínio da marca (ex.: ' + esc(atual.p1.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() + atual.p2.toLowerCase()) + '.com.br) e confira o nome no INPI antes de divulgar.</p></div>';
+  }
+
   /* ---------- Limites de uso ---------- */
   function viewLimites() {
     const L = cfg.limites;
@@ -905,7 +923,7 @@ service cloud.firestore {
 
   function renderApp() {
     $('#adm-save').hidden = false; $('#adm-logout').hidden = false;
-    const views = { geral: viewGeral, agenda: viewAgenda, pix: viewPix, patrocinios: viewPatrocinios, teste: viewTeste, recomendados: viewRecomendados, pacotes: viewPacotes, anuncios: viewAnuncios, avancado: viewAvancado, pedidos: viewCloud, lembretes: viewCloud, usuarios: viewCloud, limites: viewLimites };
+    const views = { geral: viewGeral, agenda: viewAgenda, pix: viewPix, patrocinios: viewPatrocinios, teste: viewTeste, recomendados: viewRecomendados, pacotes: viewPacotes, anuncios: viewAnuncios, avancado: viewAvancado, pedidos: viewCloud, lembretes: viewCloud, usuarios: viewCloud, limites: viewLimites, marca: viewMarca };
     const root = $('#adm');
     root.innerHTML =
       (session.demo ? '<div class="panel panel-pad" style="margin-bottom:16px;border-color:var(--warn)"><b>Modo demonstração.</b> <span class="muted">Explore à vontade: nada aqui é publicado. Para salvar de verdade, entre com o token do GitHub no site publicado.</span></div>' : '') +
@@ -944,6 +962,7 @@ service cloud.firestore {
     }));
     drawPix(root);
     bindTeste(root);
+    $$('input[name="marca"]', root).forEach((r) => r.addEventListener('change', () => { cfg.marca = r.value; setDirty(true); renderApp(); }));
     if (CLOUD_TABS.includes(tab)) loadCloudTab(root);
     const rc = $('#adm-rules-copy', root);
     if (rc) rc.addEventListener('click', async () => {
