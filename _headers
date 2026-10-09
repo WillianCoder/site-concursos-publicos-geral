@@ -1,6 +1,6 @@
 # Cabeçalhos de segurança HTTP.
-# Usados automaticamente pelo Cloudflare Pages e pelo Netlify (o GitHub Pages ignora este arquivo;
-# lá valem as proteções equivalentes declaradas dentro das próprias páginas).
+# Usados automaticamente pela hospedagem (Cloudflare Pages). Onde este arquivo não é lido,
+# valem as proteções equivalentes declaradas dentro das próprias páginas.
 /*
   Content-Security-Policy: default-src 'self'; script-src 'self' https://www.gstatic.com https://pagead2.googlesyndication.com https://*.googlesyndication.com https://*.google.com https://*.googletagservices.com https://*.doubleclick.net https://*.adtrafficquality.google https://fundingchoicesmessages.google.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.github.com https://*.googleapis.com https://*.google.com https://*.googlesyndication.com https://*.doubleclick.net https://*.adtrafficquality.google https://*.firebaseio.com https://*.firebaseapp.com https://www.gstatic.com; frame-src https://*.googlesyndication.com https://*.doubleclick.net https://*.google.com https://*.firebaseapp.com https://*.adtrafficquality.google; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests; frame-ancestors 'none'
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload

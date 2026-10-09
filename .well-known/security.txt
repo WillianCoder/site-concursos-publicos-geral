@@ -1,5 +1,0 @@
-# Política de divulgação responsável do Atlas Concursos
-Contact: https://github.com/WillianCoder/site-concursos-publicos-geral/security/advisories/new
-Expires: 2027-10-04T00:00:00.000Z
-Preferred-Languages: pt-BR, en
-Policy: https://github.com/WillianCoder/site-concursos-publicos-geral/blob/main/SECURITY.md

@@ -70,7 +70,7 @@ Configuráveis no Painel, aba **Limites de uso** (`limites` no `config.js`, 0 = 
 | Pedidos por dia por pessoa | 3 |
 | Concursos com lembrete no WhatsApp por pessoa | 3 |
 
-Cada pedido da Pesquisa no Diário cobre 1 pessoa, 1 concurso, o Diário Oficial do estado e da União, o site do órgão e da banca e os últimos 12 meses (escrito na página do serviço e nos termos). O plano **Acompanhamento** (`servicos.acompanhamento`) fica desligado até você ativar no Painel.
+Cada pedido da Pesquisa no Diário cobre 1 pessoa, 1 concurso, o Diário Oficial do estado e da União, o site do órgão e da banca e todo o período disponível nos sites oficiais, desde o edital (o cliente pode escolher um período menor; escrito na página do serviço e nos termos). O plano **Acompanhamento** (`servicos.acompanhamento`) fica desligado até você ativar no Painel.
 
 ## Google e compartilhamento
 
@@ -130,7 +130,7 @@ Resumo em [SECURITY.md](SECURITY.md). Principais camadas: site estático (sem se
 
 > Para ter **todos** os cabeçalhos de segurança e ainda manter o repositório privado de graça, publique pelo **Cloudflare Pages** (passo a passo abaixo).
 
-Em qualquer hospedagem, só vão ao ar os arquivos montados por `scripts/build-site.sh` (páginas, `assets/`, `data/radar.js`, `data/agenda.js`, `_headers`, `security.txt`). O código do robô, o README e o estado interno do Radar ficam só no repositório.
+Em qualquer hospedagem, só vão ao ar os arquivos montados por `scripts/build-site.sh` (páginas, `assets/`, `data/radar.js`, `data/agenda.js`, `_headers` e o `security.txt`, gerado com o contato do `config.js`). O código do robô, o README e o estado interno do Radar ficam só no repositório.
 
 ### Publicar pelo Cloudflare Pages (repositório privado, grátis)
 

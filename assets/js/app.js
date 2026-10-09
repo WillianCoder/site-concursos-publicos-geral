@@ -373,12 +373,12 @@
     }
   }
 
-  // Reportes vão para as issues do repositório; se ele for privado (repoUrl vazio), vão por e-mail.
-  function issueUrl(title, body) {
-    const repo = (CFG.repoUrl || '').replace(/\/$/, '');
-    if (repo) return repo + '/issues/new?title=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(body);
-    const mail = CFG.contato && CFG.contato.email;
-    return mail ? 'mailto:' + mail + '?subject=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(body) : null;
+  // Avisos de link quebrado e sugestões vão para o WhatsApp do contato (ou, sem WhatsApp, para o e-mail).
+  function reportUrl(title, body) {
+    const c = CFG.contato || {};
+    const wa = String(c.whatsapp || '').replace(/\D/g, '');
+    if (wa) return 'https://wa.me/' + wa + '?text=' + encodeURIComponent(title + '\n\n' + body);
+    return c.email ? 'mailto:' + c.email + '?subject=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(body) : null;
   }
 
   function download(name, text, type) {
@@ -437,12 +437,14 @@
     const s = Store.state;
     const favCount = Object.keys(s.favs).length;
     const h = '#' + (current.hash || '/');
-    const link = (href, ic, label, count) => {
+    // tag: etiqueta de destaque no lugar do contador (ex.: o preço de um serviço pago).
+    const link = (href, ic, label, count, tag) => {
       const active = href === h || (href !== '#/' && h.startsWith(href + '/')) ? ' active' : '';
-      return '<a class="' + active.trim() + '" href="' + href + '">' + icon(ic) + '<span>' + esc(label) + '</span>' + (count != null ? '<span class="count">' + count + '</span>' : '') + '</a>';
+      return '<a class="' + active.trim() + '" href="' + href + '">' + icon(ic) + '<span>' + esc(label) + '</span>' +
+        (tag ? '<span class="count paid" title="Serviço pago">' + esc(tag) + '</span>' : count != null ? '<span class="count">' + count + '</span>' : '') + '</a>';
     };
     let html = link('#/', 'home', 'Início') + link('#/explorar', 'grid', 'Explorar tudo', totalSites) + link('#/estados', 'map', 'Estados', 27);
-    topNav.filter((n) => !n.show || n.show()).forEach((n) => { html += link(n.href, n.icon, n.label, n.count ? n.count(s) : null); });
+    topNav.filter((n) => !n.show || n.show()).forEach((n) => { html += link(n.href, n.icon, n.label, n.count ? n.count(s) : null, n.tag ? n.tag() : ''); });
     const me = ufBy[s.profile.uf];
     if (me) html += link('#/uf/' + me.uf, 'flag', 'Meu estado: ' + me.uf);
     // Categorias: 5 à mostra e o resto em "Ver mais" (abre sozinho se a página atual estiver escondida).
@@ -1125,11 +1127,11 @@
     fav: (b) => toggleFav(b.dataset.url),
     copy: (b) => copy(b.dataset.url),
     report: (b) => {
-      const url = issueUrl('Link quebrado: ' + b.dataset.name, 'O link abaixo não está funcionando ou mudou de endereço:\n\n- Nome: ' + b.dataset.name + '\n- Link atual: ' + b.dataset.url + '\n- Endereço correto (se souber): \n');
-      if (url) window.open(url, '_blank', 'noopener'); else toast('Obrigado! Configure o repositório em config.js.');
+      const url = reportUrl('Link quebrado: ' + b.dataset.name, 'O link abaixo não está funcionando ou mudou de endereço:\n\n- Nome: ' + b.dataset.name + '\n- Link atual: ' + b.dataset.url + '\n- Endereço correto (se souber): \n');
+      if (url) window.open(url, '_blank', 'noopener'); else toast('Obrigado! O contato para avisos ainda não foi configurado.');
     },
     suggest: (b) => {
-      const url = issueUrl('Sugestão de link: ' + b.dataset.name, 'Sugiro adicionar o site oficial de:\n\n- Órgão: ' + b.dataset.name + '\n- Link: \n');
+      const url = reportUrl('Sugestão de link: ' + b.dataset.name, 'Sugiro adicionar o site oficial de:\n\n- Órgão: ' + b.dataset.name + '\n- Link: \n');
       if (url) window.open(url, '_blank', 'noopener');
     },
     'set-uf': (b) => {

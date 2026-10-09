@@ -9,7 +9,7 @@ rm -rf _site
 mkdir -p _site/data
 cp index.html admin.html privacidade.html termos.html sw.js manifest.webmanifest \
    robots.txt ads.txt _headers .nojekyll _site/
-cp -R assets .well-known _site/
+cp -R assets _site/
 cp data/radar.js data/agenda.js _site/data/
 # Páginas por estado para o Google, sitemap.xml e endereços absolutos da prévia.
 # O endereço vem de SITE_URL (variável do Cloudflare), do siteUrl do config.js

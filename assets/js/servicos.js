@@ -30,7 +30,8 @@
   A.shareWa = (text, hash) => 'https://wa.me/?text=' + encodeURIComponent(text + '\n' + siteBase() + (hash || ''));
   const hasPix = () => !!(A.pix && A.pix.ready());
   const newCode = () => 'D' + Date.now().toString(36).toUpperCase().slice(-5) + Math.random().toString(36).slice(2, 5).toUpperCase();
-  const DESDE = [['3m', 'Últimos 3 meses'], ['6m', 'Últimos 6 meses'], ['1a', 'Últimos 12 meses']];
+  // Período da pesquisa. "tudo" = todo o período que os sites oficiais deixam consultar (desde o edital do concurso).
+  const DESDE = [['tudo', 'Todo o período disponível (desde o edital)'], ['2a', 'Últimos 2 anos'], ['1a', 'Últimos 12 meses'], ['6m', 'Últimos 6 meses'], ['3m', 'Últimos 3 meses']];
   // Planos do serviço: a pesquisa avulsa e, se ativado no Painel, o acompanhamento semanal.
   const PLANOS = () => [
     { id: 'avulsa', nome: 'Pesquisa completa', preco: Number(SV.preco), resumo: 'Uma pesquisa completa, com o resultado explicado no WhatsApp ' + SV.prazo + '.' },
@@ -39,7 +40,7 @@
   const planoOf = (id) => PLANOS().find((x) => x.id === id) || PLANOS()[0];
   const menorPreco = () => Math.min.apply(null, PLANOS().map((x) => x.preco));
   // O que o serviço cobre (aparece na página e nos termos).
-  const INCLUI = ['1 pessoa: nome completo, RG e nº de inscrição', '1 concurso, no estado escolhido', 'Diário Oficial do estado e Diário Oficial da União', 'Site do órgão e da banca organizadora', 'Publicações dos últimos 12 meses (você escolhe o período)', 'Resultado explicado no WhatsApp, com os links'];
+  const INCLUI = ['1 pessoa: nome completo, RG e nº de inscrição', '1 concurso, no estado escolhido', 'Diário Oficial do estado e Diário Oficial da União', 'Site do órgão e da banca organizadora', 'Todo o período disponível nos sites oficiais, desde o edital (ou o período que você escolher)', 'Resultado explicado no WhatsApp, com os links'];
   const NAO_INCLUI = ['Outros concursos ou outras pessoas (faça um pedido para cada)', 'Diários de prefeituras (consulte no WhatsApp)', 'Acesso à área do candidato ou a sistemas com senha', 'Recursos, defesas ou orientação jurídica', 'Garantia de aprovação ou de nomeação'];
   const STATUS = {
     aguardando: ['warn', 'Aguardando pagamento'],
@@ -205,7 +206,8 @@
     const scope = '<div class="panel panel-pad scope"><span class="eyebrow">' + icon('clipboard') + 'O que está incluído</span>' +
       '<ul class="scope-list ok">' + INCLUI.map((x) => '<li>' + icon('check') + esc(x) + '</li>').join('') + '</ul>' +
       '<span class="eyebrow" style="margin-top:12px">' + icon('x') + 'Não está incluído</span>' +
-      '<ul class="scope-list no">' + NAO_INCLUI.map((x) => '<li>' + icon('x') + esc(x) + '</li>').join('') + '</ul></div>';
+      '<ul class="scope-list no">' + NAO_INCLUI.map((x) => '<li>' + icon('x') + esc(x) + '</li>').join('') + '</ul>' +
+      '<p class="muted small" style="margin-top:12px">' + icon('info', 'i-inline') + ' Os diários oficiais são públicos e gratuitos. Você paga pelo nosso trabalho de procurar em todos os lugares, nos formatos certos, e explicar o resultado. Não somos órgão do governo nem da banca.</p></div>';
 
     const intro =
       '<div class="page-head service-head"><div><span class="eyebrow">' + icon('sparkle') + 'Serviço Atlas · ' + (PLANOS().length > 1 ? 'a partir de ' : '') + brl(menorPreco()) + '</span>' +
@@ -229,7 +231,7 @@
         '<label class="field full">Concurso e cargo *<input class="input" name="concurso" required maxlength="120" value="' + v('concurso', watch.extra) + '" placeholder="Ex.: PM-SP Soldado 2025, TJ-RJ Técnico"></label>' +
         '<label class="field"><span>Nº de inscrição <span class="muted">(se tiver)</span></span><input class="input" name="inscricao" maxlength="40" value="' + v('inscricao', watch.insc) + '"></label>' +
         '<label class="field"><span>RG <span class="muted">(opcional)</span></span><input class="input" name="rg" maxlength="20" value="' + v('rg', watch.rg) + '" inputmode="numeric"></label>' +
-        '<label class="field">Procurar publicações<select class="select" name="desde">' + DESDE.map((d) => '<option value="' + d[0] + '"' + ((draft.desde || '6m') === d[0] ? ' selected' : '') + '>' + d[1] + '</option>').join('') + '</select></label>' +
+        '<label class="field">Procurar publicações<select class="select" name="desde">' + DESDE.map((d) => '<option value="' + d[0] + '"' + ((draft.desde || 'tudo') === d[0] ? ' selected' : '') + '>' + d[1] + '</option>').join('') + '</select></label>' +
         '<label class="field full"><span>Algo mais que devemos saber? <span class="muted">(opcional)</span></span><textarea class="textarea" name="obs" rows="2" maxlength="400" style="min-height:60px" placeholder="Ex.: estou esperando a convocação para o exame médico">' + v('obs') + '</textarea></label>' +
         '<label class="opt-check full"><input type="checkbox" name="lgpd" required' + (draft.lgpd ? ' checked' : '') + '> Autorizo o Atlas a usar estes dados somente para fazer esta pesquisa e falar comigo no WhatsApp (<a class="grad-text" href="privacidade.html" target="_blank" rel="noopener">privacidade</a>).</label>' +
         '<p class="badge danger full auth-error" id="order-error" hidden></p>' +

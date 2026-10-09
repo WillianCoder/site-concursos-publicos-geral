@@ -19,12 +19,13 @@
   const TEAM = 'atlas:equipe';
   const isTeam = () => { try { return localStorage.getItem(TEAM) === '1'; } catch (e) { return false; } };
   A.team = { is: isTeam, set(on) { try { if (on) localStorage.setItem(TEAM, '1'); else localStorage.removeItem(TEAM); } catch (e) {} } };
-  A.navTop.push({ href: '#/pesquisa-diario', icon: 'search', label: 'Meu nome no Diário', show: () => !!(A.services && A.services.active()) });
+  const preco = () => A.services.brl(A.services.price()).replace(',00', '');
+  A.navTop.push({ href: '#/pesquisa-diario', icon: 'search', label: 'Meu nome no Diário', show: () => !!(A.services && A.services.active()), tag: preco });
   A.nav.push({ href: '#/equipe/busca', icon: 'shield', label: 'Busca da equipe', show: isTeam });
 
   // Atalho para o serviço pago em cada órgão estadual.
   A.cardBadges.push((it) => it.uf && it.tipo && it.tipo !== 'trt' && A.services && A.services.active()
-    ? '<a class="chip find-chip" href="#/pesquisa-diario/' + it.uf + '">' + icon('search') + 'Procuramos seu nome no Diário</a>' : '');
+    ? '<a class="chip find-chip" href="#/pesquisa-diario/' + it.uf + '">' + icon('search') + 'Procuramos seu nome no Diário · ' + preco() + '</a>' : '');
 
   /* ---------- Formatos de documento ---------- */
   const digits = (s) => String(s || '').replace(/\D/g, '');
@@ -76,7 +77,7 @@
   const ORG_HINTS = [['pm', /\bpm|pol[ií]cia militar|soldado/], ['cbm', /bombeir|\bcbm/], ['pc', /\bpc|pol[ií]cia civil|delegad|escriv[aã]o|investigador/], ['tj', /\btj|tribunal de justi|escrevente/],
     ['mp', /\bmp|minist[ée]rio p[úu]blico/], ['dpe', /defensoria|\bdpe/], ['tre', /\btre\b|eleitoral/], ['sefaz', /sefaz|fazenda|auditor fiscal/], ['tce', /\btce|tribunal de contas/], ['al', /assembleia/]];
   const guessOrg = (txt, e) => { const t = String(txt || '').toLowerCase(); const hit = ORG_HINTS.find((h) => h[1].test(t) && e && e.items[h[0]]); return hit ? hit[0] : ''; };
-  const DESDE = { '3m': 'últimos 3 meses', '6m': 'últimos 6 meses', '1a': 'últimos 12 meses' };
+  const DESDE = { '3m': 'últimos 3 meses', '6m': 'últimos 6 meses', '1a': 'últimos 12 meses', '2a': 'últimos 2 anos', tudo: 'todo o período disponível' };
   let pedido = {};   // dados do pedido que o Painel mandou (código, concurso, período)
   const toHash = () => '#/equipe/busca?' + new URLSearchParams(Object.entries(Object.assign({}, pedido, form, { cpf: '' })).filter((x) => x[1])).toString();
 
@@ -104,7 +105,7 @@
     const orgOptions = e ? TIPOS_ORG.filter((k) => e.items[k]).map((k) => '<option value="' + k + '"' + (form.org === k ? ' selected' : '') + '>' + esc(DATA.tipos[k].nome) + '</option>').join('') : '';
     const info = pedido.pedido
       ? '<div class="panel panel-pad finder-order"><span class="eyebrow">' + icon('clipboard') + 'Pedido ' + esc(pedido.pedido) + '</span>' +
-        '<p style="margin-top:6px"><b>' + esc(pedido.concurso || 'Concurso não informado') + '</b>' + (pedido.desde && DESDE[pedido.desde] ? ' · procurar nos ' + DESDE[pedido.desde] : '') + '</p></div>'
+        '<p style="margin-top:6px"><b>' + esc(pedido.concurso || 'Concurso não informado') + '</b>' + (pedido.desde && DESDE[pedido.desde] ? ' · procurar: ' + DESDE[pedido.desde] : '') + '</p></div>'
       : '';
 
     return {
