@@ -91,14 +91,23 @@
     logout: '<path d="M15 4h4v16h-4"/><path d="m10 17-5-5 5-5M5 12h11"/>',
     edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13 7 4 4"/>',
     link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
-    sparkle: '<path d="m12 3 1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 17v4M17 19h4"/>',
+    // Lupa da marca (no lugar da antiga estrela): lente e cabo com o degradê do site, check no centro.
+    sparkle: '<circle cx="10.5" cy="10.5" r="6.5" stroke="GRAD"/><path d="m15.3 15.3 4.7 4.7" stroke="GRAD" stroke-width="2.6"/><path d="m7.8 10.6 1.9 1.9 3.5-3.7"/>',
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.01"/>',
     install: '<rect x="6" y="2" width="12" height="20" rx="3"/><path d="M12 8v7M9 12l3 3 3-3"/>',
     bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
     chat: '<path d="M4 20l1.4-4A8 8 0 1 1 8.5 19z"/><path d="M9 10.5c.5 2 2 3.5 4 4l1.2-1.2 2 .8-.4 1.6c-3.8 0-7.4-3.6-7.4-7.4l1.6-.4.8 2z"/>',
     pix: '<path d="M12 3l9 9-9 9-9-9z"/><path d="M8 8l4 4 4-4M8 16l4-4 4 4"/>'
   };
-  const icon = (name, cls) => '<svg class="i ' + (cls || '') + '" viewBox="0 0 24 24" aria-hidden="true">' + (ICONS[name] || ICONS.link) + '</svg>';
+  let gradSeq = 0;
+  const icon = (name, cls) => {
+    let body = ICONS[name] || ICONS.link;
+    if (body.includes('GRAD')) {   // ícone com degradê: cada cópia leva o seu (ids únicos)
+      const id = 'ig' + (++gradSeq);
+      body = '<defs><linearGradient id="' + id + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#8b5cf6"/></linearGradient></defs>' + body.replace(/GRAD/g, 'url(#' + id + ')');
+    }
+    return '<svg class="i ' + (cls || '') + '" viewBox="0 0 24 24" aria-hidden="true">' + body + '</svg>';
+  };
   const hydrateIcons = (root) => $$('[data-icon]', root).forEach((el) => { if (!el.firstElementChild) el.innerHTML = icon(el.dataset.icon); });
 
   /* =========================================================
@@ -422,6 +431,8 @@
   const topNav = [];     // features.js adiciona "Radar de Editais" e "Descubra seu concurso"
   const cardBadges = []; // funções (item) => html de selos extras nos cards
   const afterRender = []; // funções chamadas depois de cada página renderizada
+  let navCatsOpen = false;
+  try { navCatsOpen = localStorage.getItem('atlas:nav-cats') === '1'; } catch (e) {}
   function renderNav() {
     const s = Store.state;
     const favCount = Object.keys(s.favs).length;
@@ -431,14 +442,25 @@
       return '<a class="' + active.trim() + '" href="' + href + '">' + icon(ic) + '<span>' + esc(label) + '</span>' + (count != null ? '<span class="count">' + count + '</span>' : '') + '</a>';
     };
     let html = link('#/', 'home', 'Início') + link('#/explorar', 'grid', 'Explorar tudo', totalSites) + link('#/estados', 'map', 'Estados', 27);
-    topNav.forEach((n) => { html += link(n.href, n.icon, n.label, n.count ? n.count(s) : null); });
+    topNav.filter((n) => !n.show || n.show()).forEach((n) => { html += link(n.href, n.icon, n.label, n.count ? n.count(s) : null); });
     const me = ufBy[s.profile.uf];
     if (me) html += link('#/uf/' + me.uf, 'flag', 'Meu estado: ' + me.uf);
+    // Categorias: 5 à mostra e o resto em "Ver mais" (abre sozinho se a página atual estiver escondida).
     html += '<div class="nav-label">Categorias</div>';
-    DATA.categorias.forEach((c) => { html += link('#/c/' + c.id, c.icone, c.nome, c.itens.length); });
+    const VISIBLE = 5;
+    const hiddenActive = DATA.categorias.slice(VISIBLE).some((c) => h === '#/c/' + c.id);
+    const catsOpen = navCatsOpen || hiddenActive;
+    DATA.categorias.forEach((c, i) => {
+      if (i === VISIBLE) html += '<div class="nav-more"' + (catsOpen ? '' : ' hidden') + '>';
+      html += link('#/c/' + c.id, c.icone, c.nome, c.itens.length);
+    });
+    if (DATA.categorias.length > VISIBLE) {
+      html += '</div><button class="nav-toggle" type="button" data-action="nav-cats" aria-expanded="' + catsOpen + '">' + icon('chevron') + '<span>' +
+        (catsOpen ? 'Ver menos' : 'Ver mais ' + (DATA.categorias.length - VISIBLE) + ' categorias') + '</span></button>';
+    }
     html += '<div class="nav-label">Minha área</div>';
     html += link('#/meus-links', 'star', 'Meus links', favCount);
-    extraNav.forEach((n) => { html += link(n.href, n.icon, n.label, n.count ? n.count(s) : null); });
+    extraNav.filter((n) => !n.show || n.show()).forEach((n) => { html += link(n.href, n.icon, n.label, n.count ? n.count(s) : null); });
     html += link('#/conta', 'user', 'Minha conta');
     const proj = projectNav.filter((n) => !n.show || n.show());
     if (proj.length) {
@@ -516,8 +538,8 @@
         '<a class="w-link" href="#/meus-links">Meus links →</a></div>' +
     '</div>';
 
-    const tiles = DATA.categorias.map((c) => tile('#/c/' + c.id, c.icone, c.nome, c.desc, c.itens.length + ' sites')).join('') +
-      tile('#/estados', 'map', 'Estados (27 UFs)', 'PM, Polícia Civil, Bombeiros, TJ, MP, Sefaz, Diário Oficial e mais, por estado.', DATA.estados.length + ' hubs');
+    const tiles = tile('#/estados', 'map', 'Estados (27 UFs)', 'PM, Polícia Civil, Bombeiros, TJ, MP, Sefaz, Diário Oficial e mais, por estado.', DATA.estados.length + ' hubs') +
+      DATA.categorias.map((c, i) => tile('#/c/' + c.id, c.icone, c.nome, c.desc, c.itens.length + ' sites').replace('<a class="tile"', '<a class="tile' + (i >= 5 ? ' tile-more" hidden' : '"'))).join('');
 
     let myState = '';
     if (me) {
@@ -548,7 +570,7 @@
       svc('#/radar', 'radar', 'Inscrições abertas', open ? '<b class="ok-text">' + open + '</b> concursos com inscrição aberta hoje' : 'Editais e inscrições abertas', { cls: 'wide', badge: open ? String(open) : '' }) +
       (SVC && SVC.active()
         ? svc('#/pesquisa-diario', 'newspaper', 'Meu nome no Diário Oficial', 'Nós procuramos para você', { cls: 'featured', badge: SVC.brl(SVC.price()).replace(',00', '') })
-        : svc('#/meu-nome', 'newspaper', 'Meu nome no Diário Oficial', 'Procure pelo nome, RG ou inscrição')) +
+        : svc('#/c/diarios', 'newspaper', 'Diários Oficiais', 'Diário da União e dos estados')) +
       svc('#/concursos', 'calendar', 'Minha próxima prova', next ? (nd === 0 ? '<b>É hoje!</b> ' : '<b>' + nd + ' dias</b> · ') + esc(next.nome) : 'Cadastre e receba lembrete no WhatsApp') +
       svc(me ? '#/uf/' + me.uf : '#/estados', 'map', 'Sites por estado', me ? 'Meu estado: ' + esc(me.nome) : 'SP, RJ, MG e todos os estados') +
       svc('#/ferramentas/pomodoro', 'clock', 'Estudo de hoje', fmtMin(studied) + ' de ' + fmtMin(goal) + (due ? ' · ' + due + ' revisões' : '')) +
@@ -577,13 +599,16 @@
         '<div class="home-more" id="home-more">' +
         widgets +
         myState +
-        '<section class="section"><div class="section-head"><h2>' + icon('grid') + 'Explore por categoria</h2><a class="link-more" href="#/explorar">Ver todos os sites ' + icon('chevron') + '</a></div><div class="tiles">' + tiles + '</div></section>' +
+        '<section class="section"><div class="section-head"><h2>' + icon('grid') + 'Explore por categoria</h2><a class="link-more" href="#/explorar">Ver todos os sites ' + icon('chevron') + '</a></div><div class="tiles" id="home-tiles">' + tiles + '</div>' +
+          (DATA.categorias.length > 5 ? '<button class="btn btn-ghost btn-sm tiles-more" id="tiles-more" type="button">' + icon('chevron') + 'Ver mais ' + (DATA.categorias.length - 5) + ' categorias</button>' : '') + '</section>' +
         recentHtml +
         adFeed() +
         '<section class="section"><div class="section-head"><h2>' + icon('target') + 'Mais acessados pelos concurseiros</h2></div><div class="cards">' + popular.map((it) => card(it)).join('') + '</div></section>' +
         '<section class="section panel panel-pad" id="tip-of-day"><span class="eyebrow">' + icon('info') + 'Dica do dia</span><p style="font-size:16px">' + esc(TIPS[new Date().getDate() % TIPS.length]) + '</p></section>' +
         '</div>',
       after(view) {
+        const tm = $('#tiles-more', view);
+        if (tm) tm.addEventListener('click', () => { $$('.tile-more', view).forEach((t) => { t.hidden = false; }); tm.remove(); });
         const more = $('#home-more-btn', view);
         more.addEventListener('click', () => { $('#home-more', view).classList.add('open'); more.remove(); });
         const sel = $('#pick-uf', view);
@@ -1096,6 +1121,7 @@
     theme: () => { Store.update((s) => { s.settings.theme = s.settings.theme === 'light' ? 'dark' : 'light'; }); applyTheme(); },
     'open-nav': () => document.body.classList.add('nav-open'),
     'close-nav': () => document.body.classList.remove('nav-open'),
+    'nav-cats': () => { navCatsOpen = !navCatsOpen; try { localStorage.setItem('atlas:nav-cats', navCatsOpen ? '1' : '0'); } catch (e) {} renderNav(); },
     fav: (b) => toggleFav(b.dataset.url),
     copy: (b) => copy(b.dataset.url),
     report: (b) => {

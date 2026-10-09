@@ -16,6 +16,8 @@
   const contato = CFG.contato || {};
   const hasPix = () => !!(pix.chave && pix.nome && pix.cidade);
   const hasContato = () => !!(contato.email || contato.whatsapp);
+  // A página "Anuncie" fica escondida até o dono ligar no Painel (mostrarAnuncie); o endereço direto continua funcionando.
+  const showAnuncie = () => hasContato() && CFG.mostrarAnuncie === true;
 
   /* =========================================================
      Pix "copia e cola" (BR Code estático, padrão do Banco Central)
@@ -55,17 +57,17 @@
      ========================================================= */
   A.navProject.push(
     { href: '#/apoie', icon: 'sparkle', label: 'Apoie o Atlas', show: hasPix },
-    { href: '#/anuncie', icon: 'target', label: 'Anuncie no Atlas', show: hasContato }
+    { href: '#/anuncie', icon: 'target', label: 'Anuncie no Atlas', show: showAnuncie }
   );
   if (hasPix()) A.pages.push({ n: 'Apoie o Atlas (Pix)', href: '#/apoie', ic: 'sparkle', sub: 'Projeto' });
-  if (hasContato()) A.pages.push({ n: 'Anuncie no Atlas', href: '#/anuncie', ic: 'target', sub: 'Projeto' });
+  if (showAnuncie()) A.pages.push({ n: 'Anuncie no Atlas', href: '#/anuncie', ic: 'target', sub: 'Projeto' });
 
   function footerLinks() {
     const box = document.querySelector('.footer-links');
     if (!box || box.dataset.monet) return;
     box.dataset.monet = '1';
     if (hasPix()) box.insertAdjacentHTML('afterbegin', '<a href="#/apoie">Apoie</a>');
-    if (hasContato()) box.insertAdjacentHTML('beforeend', '<a href="#/anuncie">Anuncie</a>');
+    if (showAnuncie()) box.insertAdjacentHTML('beforeend', '<a href="#/anuncie">Anuncie</a>');
   }
 
   /* =========================================================
@@ -121,7 +123,7 @@
   // Posições: topo (logo no início), meio (no meio do conteúdo) ou fim (antes do rodapé).
   function placeSponsors(view, key, pos, list, preview) {
     if (!list.length) return;
-    const html = '<section class="section" data-monet="sponsor" data-pos="' + pos + '"><div class="section-head"><h2>' + icon('sparkle') + 'Parceiros</h2><a class="link-more" href="#/anuncie">Anuncie aqui</a></div><div class="cards">' +
+    const html = '<section class="section" data-monet="sponsor" data-pos="' + pos + '"><div class="section-head"><h2>' + icon('sparkle') + 'Parceiros</h2>' + (showAnuncie() ? '<a class="link-more" href="#/anuncie">Anuncie aqui</a>' : '') + '</div><div class="cards">' +
       list.map((p) => sponsorCard(p, p === preview)).join('') + '</div></section>';
     if (pos === 'fim') {
       const tip = key === 'home' ? $('#tip-of-day', view) : null;
@@ -213,7 +215,7 @@
         '<section class="section"><div class="section-head"><h2>' + icon('target') + 'Outras formas de ajudar</h2></div><div class="tiles">' +
           '<div class="tile"><span class="tile-icon">' + icon('link', 'i-lg') + '</span><h3>Compartilhe</h3><p>Mande o link nos grupos de estudo do WhatsApp e do Telegram.</p></div>' +
           '<div class="tile"><span class="tile-icon">' + icon('flag', 'i-lg') + '</span><h3>Reporte links</h3><p>Use o botão ⚑ quando um site mudar de endereço.</p></div>' +
-          '<a class="tile" href="#/anuncie"><span class="tile-icon">' + icon('briefcase', 'i-lg') + '</span><h3>Indique um anunciante</h3><p>Conhece um cursinho? Ele pode patrocinar o Atlas a partir de R$ 29.</p></a>' +
+          (showAnuncie() ? '<a class="tile" href="#/anuncie"><span class="tile-icon">' + icon('briefcase', 'i-lg') + '</span><h3>Indique um anunciante</h3><p>Conhece um cursinho? Ele pode patrocinar o Atlas a partir de R$ 29.</p></a>' : '') +
         '</div></section>',
       after(view) {
         const sb = $('#share-btn', view);

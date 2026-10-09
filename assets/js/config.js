@@ -14,7 +14,8 @@ window.ATLAS_CONFIG = {
     "diario": { "ativo": true, "preco": 15, "prazo": "em até 2 dias úteis" },
     "acompanhamento": { "ativo": false, "preco": 39, "semanas": 4 }
   },
-  "limites": { "buscasDia": 5, "buscasDiaConta": 15, "lembretes": 3, "pedidosAbertos": 2, "pedidosDia": 3 },
+  "limites": { "lembretes": 3, "pedidosAbertos": 2, "pedidosDia": 3 },
+  "mostrarAnuncie": false,
   "pacotes": [
     { "nome": "Destaque em categoria", "preco": "R$ 49/semana", "desc": "Seu card no topo de uma categoria (ex.: Estudo Gratuito, Bancas, Legislação).", "ideal": "Cursinhos, editoras, professores" },
     { "nome": "Destaque no estado", "preco": "R$ 99/mês", "desc": "Card patrocinado no hub de um estado (ex.: Minas Gerais), visto por quem presta concursos ali.", "ideal": "Cursinhos regionais e preparatórios para PM/PC" },

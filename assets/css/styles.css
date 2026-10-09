@@ -616,6 +616,7 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; 
 .finder-row { flex-wrap: wrap; background: var(--input); }
 .finder-row .grow { min-width: 200px; }
 .query { display: block; margin-top: 4px; font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.finder-order { margin-bottom: 18px; }
 .find-chip { align-self: flex-start; color: var(--c1); border-color: color-mix(in srgb, var(--c1) 35%, transparent); }
 @media (max-width: 1000px) {
   .finder { grid-template-columns: 1fr; }
@@ -729,9 +730,10 @@ details.ag-section > summary::-webkit-details-marker { display: none; }
 .auth-error { white-space: normal; text-align: left; }
 .auth-or { display: flex; align-items: center; gap: 10px; color: var(--faint); font-size: 13px; }
 .auth-or::before, .auth-or::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-.check { display: block; position: relative; padding-left: 28px; font-size: 14px; color: var(--muted); line-height: 1.45; cursor: pointer; }
-.check input { position: absolute; left: 0; top: 1px; margin: 0; width: 18px; height: 18px; accent-color: var(--c1); }
-.check .i { display: inline; width: 16px; height: 16px; vertical-align: -3px; }
+/* Caixa de marcar com texto (formulários). Não confundir com .check, o botão das listas de estudo. */
+.opt-check { display: block; position: relative; padding-left: 28px; font-size: 14px; color: var(--muted); line-height: 1.45; cursor: pointer; min-width: 0; }
+.opt-check input { position: absolute; left: 0; top: 1px; margin: 0; width: 18px; height: 18px; accent-color: var(--c1); }
+.opt-check .i { display: inline; width: 16px; height: 16px; vertical-align: -3px; }
 .check-list { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
 
 /* ---------- Serviço: pesquisa no Diário Oficial ---------- */
@@ -751,9 +753,6 @@ details.ag-section > summary::-webkit-details-marker { display: none; }
 .pay-steps { display: flex; flex-direction: column; gap: 10px; }
 .btn-wa { background: #1fa855; border-color: #1fa855; color: #fff; }
 .btn-wa:hover { background: #188f47; }
-.promo-diario { display: flex; align-items: center; gap: 14px; padding: 16px; margin-bottom: 18px; border: 1.5px solid transparent; background: linear-gradient(var(--panel-solid), var(--panel-solid)) padding-box, var(--grad) border-box; }
-.promo-diario b { display: block; }
-.promo-diario span:not(.btn):not(.tile-icon) { display: block; font-size: 13.5px; color: var(--muted); margin-top: 2px; }
 .order-row { flex-wrap: wrap; }
 .whats-box { border: 1px dashed var(--border-strong); border-radius: var(--radius-sm); padding: 12px; margin: 0; display: flex; flex-direction: column; gap: 12px; }
 .whats-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -765,8 +764,6 @@ details.ag-section > summary::-webkit-details-marker { display: none; }
 @media (max-width: 520px) {
   .service-form, .whats-opts { grid-template-columns: 1fr; }
   .pay-grid { grid-template-columns: 1fr; justify-items: center; }
-  .promo-diario { flex-wrap: wrap; }
-  .promo-diario .btn { width: 100%; }
 }
 
 /* ---------- Prévia de anúncio (aberta pelo Painel) ---------- */
@@ -777,9 +774,6 @@ details.ag-section > summary::-webkit-details-marker { display: none; }
 .order-row .grow { min-width: 160px; }
 
 /* ---------- Limites, planos e escopo do serviço ---------- */
-.limit-box { display: flex; gap: 14px; align-items: flex-start; border-color: color-mix(in srgb, var(--warn) 45%, var(--border)); }
-.limit-box h3 { font-size: 17px; margin-bottom: 4px; }
-.limit-box .btn-row { margin-top: 12px; }
 .plan-pick { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
 .plan { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 14px 14px 14px 42px; border: 1.5px solid var(--border); border-radius: 14px; cursor: pointer; background: var(--input); }
 .plan input { position: absolute; left: 14px; top: 16px; width: 18px; height: 18px; accent-color: var(--c1); margin: 0; }
@@ -794,3 +788,13 @@ details.ag-section > summary::-webkit-details-marker { display: none; }
 .scope-list.ok .i { color: var(--c3); }
 .scope-list.no .i { color: var(--danger); }
 #finder-left { align-self: center; }
+/* Em botões e fundos com degradê, a lupa fica na cor do texto para não sumir. */
+.btn-primary .i [stroke^="url"], .svc.featured .svc-icon .i [stroke^="url"], .plan-price .i [stroke^="url"], .tag .i [stroke^="url"] { stroke: currentColor; }
+
+/* Categorias: 5 à mostra e "Ver mais" */
+.nav-toggle { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 12px; border-radius: 10px; font-size: 13.5px; font-weight: 600; color: var(--c1); text-align: left; }
+.nav-toggle:hover { background: var(--panel-hover); }
+.nav-toggle .i { width: 16px; height: 16px; transform: rotate(90deg); transition: transform .2s; }
+.nav-toggle[aria-expanded="true"] .i { transform: rotate(-90deg); }
+.tiles-more { margin-top: 12px; }
+.tiles-more .i { transform: rotate(90deg); }
