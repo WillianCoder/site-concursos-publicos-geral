@@ -130,7 +130,7 @@ Resumo em [SECURITY.md](SECURITY.md). Principais camadas: site estático (sem se
 
 > Para ter **todos** os cabeçalhos de segurança e ainda manter o repositório privado de graça, publique pelo **Cloudflare Pages** (passo a passo abaixo).
 
-Em qualquer hospedagem, só vão ao ar os arquivos montados por `scripts/build-site.sh` (páginas, `assets/`, `data/radar.js`, `data/agenda.js`, `_headers` e o `security.txt`, gerado com o contato do `config.js`). O código do robô, o README e o estado interno do Radar ficam só no repositório.
+Em qualquer hospedagem, só vão ao ar os arquivos montados por `scripts/build-site.sh` (páginas, `assets/`, `data/radar.js`, `data/agenda.js`, `_headers` e o `security.txt`, gerado com o contato do `config.js`). O código do robô, o README e o estado interno do Radar ficam só no repositório. No build, o JavaScript e o CSS publicados são minificados com o esbuild (sem comentários, nomes internos encurtados), o que deixa o código bem mais difícil de ler e copiar; se o esbuild não puder ser baixado, o site sai com os arquivos originais.
 
 ### Publicar pelo Cloudflare Pages (repositório privado, grátis)
 
