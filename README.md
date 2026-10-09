@@ -1,6 +1,8 @@
-# Atlas Concursos
+# Busquei Concursos
 
 **Todos os sites de concursos públicos do Brasil em um só lugar — grátis.**
+
+> No ar com a marca **Busquei Concursos**. O código usa o nome interno "Atlas Concursos"; a marca publicada é escolhida no Painel (aba "Marca e logo") e aplicada no build — veja a seção "Marca (nome e logo)".
 
 O Atlas Concursos reúne os endereços oficiais que todo concurseiro precisa: bancas organizadoras, Diário Oficial da União e dos estados, polícias, tribunais, Ministério Público, Defensorias, Secretarias da Fazenda, Tribunais de Contas, Assembleias, bancos e estatais, além da legislação seca no site do Planalto. Também traz ferramentas de estudo gratuitas.
 

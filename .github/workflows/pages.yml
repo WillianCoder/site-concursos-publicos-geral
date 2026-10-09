@@ -19,6 +19,9 @@ concurrency:
 
 jobs:
   deploy:
+    # Com o repositório privado (plano grátis) o GitHub Pages não publica: o site
+    # passa a sair só pelo Cloudflare Pages e este passo é pulado, sem dar erro.
+    if: ${{ !github.event.repository.private }}
     runs-on: ubuntu-latest
     environment:
       name: github-pages
