@@ -6,7 +6,6 @@
  */
 window.ATLAS_CONFIG = {
   "siteUrl": "",
-  "repoUrl": "https://github.com/WillianCoder/site-concursos-publicos-geral",
   "ads": { "client": "", "slots": { "sidebar": "", "feed": "", "footer": "" } },
   "pix": { "chave": "", "nome": "", "cidade": "", "valores": [5, 10, 20, 50] },
   "contato": { "email": "", "whatsapp": "5511911482873" },

@@ -123,7 +123,7 @@
 
   // Modo demonstração: abre o painel com as configurações atuais do site, sem token e sem publicar nada.
   function startDemo() {
-    const [owner, repo] = (repoFromConfig() || 'WillianCoder/site-concursos-publicos-geral').split('/');
+    const [owner, repo] = (savedRepo() || 'demonstracao/site').split('/');
     session = { demo: true, owner, repo, branch: 'main' };
     cfg = normalize(clone(LOCAL));
     agenda = clone(window.ATLAS_AGENDA || { atualizadoEm: '', itens: [] });
@@ -193,19 +193,18 @@
   }
 
   /* ---------- Login ---------- */
-  function repoFromConfig() {
-    const m = String(LOCAL.repoUrl || '').match(/github\.com\/([^/]+)\/([^/#?]+)/);
-    return m ? m[1] + '/' + m[2] : '';
-  }
+  // O repositório não fica escrito no código do site: é digitado no primeiro acesso e lembrado neste aparelho.
+  const REPO_KEY = 'atlas:adm-repo';
+  function savedRepo() { try { return localStorage.getItem(REPO_KEY) || ''; } catch (e) { return ''; } }
 
   function renderLogin(error) {
     $('#adm-save').hidden = true; $('#adm-logout').hidden = true;
     $('#adm').innerHTML =
       '<form class="panel panel-pad adm-login" id="login">' +
         '<span class="eyebrow">Acesso restrito</span><h1 style="font-size:26px">Painel do Administrador</h1>' +
-        '<p class="muted">Edite Pix, contato, patrocínios, recomendados e anúncios sem mexer em código. Cada alteração é publicada no GitHub e o site atualiza sozinho.</p>' +
+        '<p class="muted">Edite Pix, contato, patrocínios, recomendados e anúncios sem mexer em código. Cada alteração é publicada e o site atualiza sozinho em cerca de 1 minuto.</p>' +
         (error ? '<p class="badge danger" style="white-space:normal">' + esc(error) + '</p>' : '') +
-        '<label class="field">Repositório (dono/nome)<input class="input" name="repo" required value="' + esc(repoFromConfig()) + '" placeholder="WillianCoder/site-concursos-publicos-geral" autocomplete="off"></label>' +
+        '<label class="field">Repositório (dono/nome)<input class="input" name="repo" required value="' + esc(savedRepo()) + '" placeholder="usuario/repositorio" autocomplete="off" spellcheck="false"></label>' +
         '<label class="field">Branch publicada<input class="input" name="branch" required value="main" autocomplete="off"></label>' +
         '<label class="field">Token de acesso do GitHub<input class="input" name="token" type="password" required placeholder="github_pat_…" autocomplete="off" spellcheck="false"></label>' +
         '<button class="btn btn-primary" type="submit">Entrar</button>' +
@@ -233,7 +232,7 @@
         if (!r.permissions || !r.permissions.push) throw new Error('Este token não tem permissão de escrita no repositório.');
         await loadRemote();
         sessionStorage.setItem(SS, JSON.stringify(session));
-        try { localStorage.setItem('atlas:equipe', '1'); } catch (e) {}   // libera a "Busca da equipe" no site neste aparelho
+        try { localStorage.setItem(REPO_KEY, owner + '/' + repo); localStorage.setItem('atlas:equipe', '1'); } catch (e) {}   // libera a "Busca da equipe" no site neste aparelho
         renderApp();
       } catch (e) {
         session = null;
@@ -387,7 +386,6 @@
         link(site, 'Ver o site', 'Abre o site publicado') +
         link(new URL('./', location.href).href + '#/equipe/busca', 'Busca da equipe', 'Monta as buscas de um pedido (só aparece para você)') +
         link('https://github.com/' + session.owner + '/' + session.repo + '/actions', 'Automações', 'Publicação, Radar e verificação de links') +
-        link('https://github.com/' + session.owner + '/' + session.repo + '/issues', 'Links reportados', 'Avisos de visitantes sobre links quebrados') +
         link('https://search.google.com/search-console', 'Google Search Console', 'Visitas vindas do Google') +
         link('https://adsense.google.com', 'Google AdSense', 'Ganhos com anúncios') +
         link('https://busca.inpi.gov.br', 'INPI', 'Registro da marca e do software') +
@@ -547,7 +545,6 @@
     return '<div class="tool-layout">' +
       '<div class="panel panel-pad adm-section"><h2 style="font-size:18px">Endereços</h2>' +
         pathInput('Endereço público do site', 'siteUrl', cfg.siteUrl, { ph: 'https://atlasconcursos.com.br', help: 'Usado nos compartilhamentos e na proteção contra o site ser exibido dentro de outro site.' }) +
-        pathInput('Repositório (para reportar links)', 'repoUrl', cfg.repoUrl, { ph: 'https://github.com/…', help: 'Deixe vazio se o repositório for privado: os avisos vão para o e-mail de contato.' }) +
       '</div>' +
       '<div class="panel panel-pad adm-section"><h2 style="font-size:18px">Contas de usuário (Firebase)</h2>' +
         pathInput('Configuração do app web (JSON)', 'firebase', cfg.firebase ? JSON.stringify(cfg.firebase, null, 2) : '', { textarea: true, kind: 'json', full: true, help: 'Cole o objeto firebaseConfig (apiKey, authDomain, projectId, appId). Vazio = contas desligadas.' }) +
@@ -654,7 +651,7 @@
     pedidos: [
       { id: 'DK3F9QAB', codigo: 'DK3F9QAB', nome: 'Maria Souza', whatsapp: '5511987654321', uf: 'SP', concurso: 'PM-SP Soldado 2025', inscricao: '123456', rg: '12.345.678', desde: '6m', obs: 'Esperando a convocação do exame médico', valor: 15, status: 'aguardando', criadoEm: today() + 'T11:00:00Z' },
       { id: 'DK2A1ZXC', codigo: 'DK2A1ZXC', nome: 'João Lima', whatsapp: '5521912345678', uf: 'RJ', concurso: 'PMERJ Soldado', valor: 15, status: 'pago', criadoEm: addD(today(), -1) + 'T15:00:00Z', pagoEm: addD(today(), -1) + 'T16:00:00Z' },
-      { id: 'DK1B7MNP', codigo: 'DK1B7MNP', nome: 'Ana Pereira', whatsapp: '5531998765432', uf: 'MG', concurso: 'PC-MG Investigador', inscricao: '778899', desde: '1a', plano: 'acompanhamento', valor: 39, status: 'pago', criadoEm: addD(today(), -9) + 'T10:00:00Z', pagoEm: addD(today(), -9) + 'T12:00:00Z', conferidoEm: addD(today(), -8), conferencias: 1 }
+      { id: 'DK1B7MNP', codigo: 'DK1B7MNP', nome: 'Ana Pereira', whatsapp: '5531998765432', uf: 'MG', concurso: 'PC-MG Investigador', inscricao: '778899', desde: 'tudo', plano: 'acompanhamento', valor: 39, status: 'pago', criadoEm: addD(today(), -9) + 'T10:00:00Z', pagoEm: addD(today(), -9) + 'T12:00:00Z', conferidoEm: addD(today(), -8), conferencias: 1 }
     ],
     lembretes: [
       { id: 'l1', nome: 'Maria Souza', whatsapp: '5511987654321', concurso: 'PM-SP Soldado 2025', prova: addD(today(), 7), avisos: ['p7', 'p1'], datas: { p7: today(), p1: addD(today(), 6) }, enviados: {} },
@@ -776,7 +773,7 @@
       ? 'Olá, ' + n + '! Terminamos o acompanhamento do pedido ' + p.codigo + ' (' + a.sem + ' semanas). Até hoje não saiu publicação com o seu nome no Diário Oficial, no órgão nem na banca de ' + p.concurso + '. Se quiser renovar, é só responder aqui.'
       : 'Olá, ' + n + '! Conferimos de novo o Diário Oficial, o órgão e a banca de ' + p.concurso + ' (semana ' + a.semana + ' de ' + a.sem + '): ainda não saiu publicação com o seu nome. Seguimos acompanhando e avisamos assim que sair.';
   }
-  const DESDE_TXT = { '3m': 'últimos 3 meses', '6m': 'últimos 6 meses', '1a': 'últimos 12 meses', tudo: 'desde o início do concurso' };
+  const DESDE_TXT = { '3m': 'últimos 3 meses', '6m': 'últimos 6 meses', '1a': 'últimos 12 meses', '2a': 'últimos 2 anos', tudo: 'todo o período disponível' };
   function orderMsg(p) {
     const n = (p.nome || '').split(' ')[0];
     if (p.status === 'aguardando') return 'Olá, ' + n + '! Aqui é do Atlas Concursos. Recebemos seu pedido ' + p.codigo + ' da Pesquisa no Diário Oficial. Assim que o Pix de ' + brl(p.valor) + ' for confirmado, começamos a pesquisa.';
@@ -793,7 +790,7 @@
       $('#o-list', box).innerHTML = f.length ? f.map((p) =>
         '<div class="panel adm-item" data-oid="' + esc(p.id) + '"><div class="adm-item-head"><h3>' + esc(p.codigo || p.id) + ' · ' + esc(p.nome) + '</h3><span class="badge">' + brl(p.valor) + '</span></div>' +
           '<div class="adm-help">' + (p.plano === 'acompanhamento' ? '<span class="badge accent">Acompanhamento</span> ' : '') + '<b>' + esc(p.concurso) + '</b>' + (p.uf ? ' (' + esc(p.uf) + ')' : '') + ' · pedido em ' + esc(fmtD(p.criadoEm)) +
-            (p.inscricao ? ' · inscrição <b>' + esc(p.inscricao) + '</b>' : '') + (p.rg ? ' · RG <b>' + esc(p.rg) + '</b>' : '') + (p.desde ? ' · procurar nos ' + esc(DESDE_TXT[p.desde] || p.desde) : '') +
+            (p.inscricao ? ' · inscrição <b>' + esc(p.inscricao) + '</b>' : '') + (p.rg ? ' · RG <b>' + esc(p.rg) + '</b>' : '') + (p.desde ? ' · procurar: ' + esc(DESDE_TXT[p.desde] || p.desde) : '') +
             (p.obs ? '<br>Obs.: ' + esc(p.obs) : '') + (p.email ? '<br>Conta: ' + esc(p.email) : '') +
             (acomp(p) ? '<br>Acompanhamento: semana <b>' + acomp(p).semana + ' de ' + acomp(p).sem + '</b> · ' + acomp(p).feitas + (acomp(p).feitas === 1 ? ' conferência' : ' conferências') + (acomp(p).ultima ? ' · última em ' + esc(fmtD(acomp(p).ultima)) : '') + ' · termina em ' + esc(fmtD(acomp(p).fim)) : '') + '</div>' +
           '<div class="btn-row"><select class="select" data-ost style="max-width:240px">' + ORDER_ST.map((o) => '<option value="' + o[0] + '"' + (p.status === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select>' +
@@ -932,8 +929,9 @@ service cloud.firestore {
     return RULES.replace('__ADMIN__', String(email || 'SEU-EMAIL-DE-ADMIN@exemplo.com').replace(/['\\]/g, ''));
   }
   function firebaseGuide() {
-    const hosts = ['atlas-concursos.pages.dev', 'williancoder.github.io'];
+    const hosts = [location.hostname];
     try { if (cfg.siteUrl) hosts.unshift(new URL(cfg.siteUrl).hostname); } catch (e) {}
+    if (!hosts.includes('atlas-concursos.pages.dev')) hosts.push('atlas-concursos.pages.dev');
     return '<details class="panel panel-pad section adm-section"' + (hasFirebase() ? '' : ' open') + '><summary style="cursor:pointer;font-weight:600">Passo a passo: ativar as contas (Firebase, grátis)</summary><ol class="adm-steps">' +
       '<li>Abra <a class="grad-text" href="https://console.firebase.google.com" target="_blank" rel="noopener">console.firebase.google.com</a> com o e-mail do negócio e clique em <b>Criar projeto</b> (nome: <code>atlas-concursos</code>; o Google Analytics pode ficar desligado).</li>' +
       '<li><b>Authentication → Vamos começar → Método de login</b>: ative <b>E-mail/senha</b> e, se quiser, <b>Google</b>.</li>' +
@@ -1040,7 +1038,7 @@ service cloud.firestore {
         '</div></div>' +
       '</div>' +
       '<div class="panel panel-pad section adm-section"><h2 style="font-size:17px">O que a Pesquisa no Diário cobre</h2>' +
-        '<p class="adm-help">Aparece na página do serviço e nos termos: <b>1 pessoa, 1 concurso, Diário Oficial do estado e da União, site do órgão e da banca, últimos 12 meses</b>. Outro concurso ou outra pessoa = outro pedido. Diários de prefeituras, área do candidato com senha e orientação jurídica não estão incluídos.</p></div>';
+        '<p class="adm-help">Aparece na página do serviço e nos termos: <b>1 pessoa, 1 concurso, Diário Oficial do estado e da União, site do órgão e da banca, todo o período disponível nos sites oficiais (desde o edital)</b>. Outro concurso ou outra pessoa = outro pedido. Diários de prefeituras, área do candidato com senha e orientação jurídica não estão incluídos.</p></div>';
   }
 
   function renderApp() {

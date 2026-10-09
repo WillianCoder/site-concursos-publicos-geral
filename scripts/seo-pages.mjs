@@ -148,6 +148,17 @@ const urls = ['', 'estados/'].concat(DATA.estados.map((e) => 'estados/' + slug(e
 fs.writeFileSync(path.join(OUT, 'sitemap.xml'), '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
   urls.map((u) => `  <url><loc>${BASE}${u}</loc><lastmod>${today}</lastmod><changefreq>${u.startsWith('estados/') && u !== 'estados/' ? 'daily' : 'weekly'}</changefreq></url>`).join('\n') + '\n</urlset>\n');
 
+// security.txt com o contato do negócio (WhatsApp ou e-mail do config.js), sem links para o repositório.
+const ct = CFG.contato || {};
+const waNum = String(ct.whatsapp || '').replace(/\D/g, '');
+const contacts = [ct.email ? 'mailto:' + ct.email : '', waNum ? 'https://wa.me/' + waNum : ''].filter(Boolean);
+if (contacts.length) {
+  fs.mkdirSync(path.join(OUT, '.well-known'), { recursive: true });
+  const exp = new Date(Date.now() + 365 * 864e5).toISOString().replace(/\.\d+Z$/, '.000Z');
+  fs.writeFileSync(path.join(OUT, '.well-known', 'security.txt'), '# Política de divulgação responsável\n' + contacts.map((c) => 'Contact: ' + c).join('\n') +
+    '\nExpires: ' + exp + '\nPreferred-Languages: pt-BR, en\nPolicy: ' + BASE + 'termos.html\n');
+}
+
 const robots = path.join(OUT, 'robots.txt');
 fs.writeFileSync(robots, fs.readFileSync(robots, 'utf8').trimEnd() + `\n\nSitemap: ${BASE}sitemap.xml\n`);
 

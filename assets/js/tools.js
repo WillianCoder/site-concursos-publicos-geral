@@ -137,7 +137,7 @@
             (WA_ON ? '<fieldset class="whats-box full"><label class="opt-check"><input type="checkbox" name="lembrete" id="ex-lem"> ' + icon('bell') + ' <b>Quero receber lembretes desta prova no meu WhatsApp</b></label>' +
               '<div class="whats-opts" id="ex-lem-opts" hidden>' +
                 '<label class="field">Meu WhatsApp<input class="input" name="whatsapp" type="tel" inputmode="tel" placeholder="(11) 91234-5678" value="' + esc(myWhats()) + '"></label>' +
-                '<div class="field"><span>Avisar quando</span><div class="check-list">' + SV.AVISOS.map((a) => '<label class="opt-check"><input type="checkbox" name="av_' + a[0] + '"' + (a[0] !== 'res' ? ' checked' : '') + '> ' + esc(a[1]) + '</label>').join('') + '</div></div>' +
+                '<div class="field"><span>Avisar quando</span><div class="check-list">' + SV.AVISOS.map((a) => '<label class="opt-check"><input type="checkbox" name="av_' + a[0] + '" checked> ' + esc(a[1]) + '</label>').join('') + '</div></div>' +
                 '<p class="muted small">Você pode desligar quando quiser tocando no sino do concurso. Seu número é usado só para os lembretes.' + (A.limits && A.limits.remindMax() ? ' Lembretes grátis em até ' + A.limits.remindMax() + ' concursos ao mesmo tempo.' : '') + '</p>' +
               '</div></fieldset>' : '') +
             '<datalist id="bancas">' + window.ATLAS_DATA.categorias.find((c) => c.id === 'bancas').itens.map((b) => '<option value="' + esc(b.n.split(' (')[0].split(' — ')[0]) + '">').join('') + '</datalist>' +
