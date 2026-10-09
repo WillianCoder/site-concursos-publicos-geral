@@ -865,6 +865,22 @@ service cloud.firestore {
         && request.resource.data.avisos.size() <= 4 && str(request.resource.data.concurso, 160));
       allow read, delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
     }
+
+    // Backup Automático (programa para Windows).
+    // Configuração pública (Pix, preços, limite grátis): todos leem, só o administrador altera.
+    match /backupApp/{doc} { allow read: if true; allow write: if isAdmin(); }
+
+    // Licença Pro de cada conta: o dono lê a sua; só o administrador cria ou altera.
+    match /backupLicencas/{uid} { allow read: if isOwner(uid) || isAdmin(); allow write: if isAdmin(); }
+
+    // Pedidos do Pro: o cliente cria (aguardando) e lê os seus; só o administrador muda a situação.
+    match /backupPedidos/{id} {
+      allow create: if signedIn() && request.resource.data.uid == request.auth.uid && request.resource.data.status == 'aguardando'
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.keys().hasOnly(['uid', 'email', 'plano', 'valor', 'meses', 'codigo', 'status', 'criadoEm']);
+      allow read: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
   }
 }
 `;

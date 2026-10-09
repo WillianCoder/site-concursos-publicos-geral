@@ -1,0 +1,59 @@
+name: Backup Automático (Windows)
+
+on:
+  push:
+    branches: [main]
+    paths: ['backup-automatico/**', '.github/workflows/backup-automatico.yml']
+  pull_request:
+    paths: ['backup-automatico/**', '.github/workflows/backup-automatico.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  testar:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Testes do núcleo (no Windows, com as funções nativas de cópia)
+        run: dotnet run -c Release --project backup-automatico/testes-cs
+      - name: Compilar o BackupAutomatico.exe
+        run: dotnet build -c Release backup-automatico/src
+      - name: Telas e um backup de verdade pelo programa
+        shell: pwsh
+        run: |
+          $base = Join-Path $env:RUNNER_TEMP 'bkp'
+          $env:BACKUPAUTO_DADOS = Join-Path $base 'dados'
+          $env:BACKUPAUTO_PROGRAMAS = Join-Path $base 'programas'
+          $origem = Join-Path $base 'Documentos de Concursos'
+          $destino = Join-Path $base 'HD Externo\Backup Automático'
+          New-Item -ItemType Directory -Force -Path (Join-Path $origem 'Simulados\Português'), $env:BACKUPAUTO_DADOS | Out-Null
+          1..5 | ForEach-Object { Set-Content -LiteralPath (Join-Path $origem "Edital $_.pdf") -Value "conteúdo $_" }
+          Set-Content -LiteralPath (Join-Path $origem 'Simulados\Português\prova ação.txt') -Value 'acentos'
+          $cfg = [ordered]@{ versao = 2; iniciarComWindows = $false; notificacoes = $true; tema = 'claro'; trabalhos = @(
+            [ordered]@{ id = 'demo1'; nome = 'Concursos'; origem = $origem; destinoBase = $destino; criarSubpasta = $true; modo = 'novos'; intervaloValor = 1; intervaloUnidade = 'semanas'; inicio = '2026-10-02T18:00:00'; ativo = $true },
+            [ordered]@{ id = 'demo2'; nome = 'Fotos do celular'; origem = 'C:\Users\Exemplo\Pictures\Celular'; destinoBase = $destino; criarSubpasta = $true; modo = 'novos'; intervaloValor = 12; intervaloUnidade = 'horas'; inicio = '2026-10-01T08:00:00'; ativo = $true; ultimoStatus = 'indisponivel'; ultimoResumo = 'Aguardando: A pasta de origem não está acessível agora.'; aguardarAte = '2099-01-01T00:00:00' },
+            [ordered]@{ id = 'demo3'; nome = 'Planilhas'; origem = 'C:\Users\Exemplo\Documents\Planilhas'; destinoBase = 'D:\Backups'; criarSubpasta = $true; modo = 'alterados'; intervaloValor = 1; intervaloUnidade = 'meses'; inicio = '2026-09-01T09:00:00'; ativo = $false; ultimaExecucao = '2026-09-01T09:00:00'; ultimoStatus = 'ok'; ultimoResumo = '3 arquivos novos copiados (1,2 MB) em 2 s.'; totalCopiados = 41 }
+          ) }
+          $cfg | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath (Join-Path $env:BACKUPAUTO_DADOS 'config.json') -Encoding utf8
+          $telas = Join-Path $env:RUNNER_TEMP 'telas'
+          $p = Start-Process -FilePath 'backup-automatico\src\bin\Release\BackupAutomatico.exe' -ArgumentList '--capturar-telas', "`"$telas`"" -Wait -PassThru -RedirectStandardOutput (Join-Path $base 'saida.txt')
+          Get-Content (Join-Path $base 'saida.txt')
+          $copiados = @(Get-ChildItem -LiteralPath (Join-Path $destino 'Documentos de Concursos') -Recurse -File -ErrorAction SilentlyContinue).Count
+          Write-Host "Arquivos no backup de teste: $copiados (esperado: 6)"
+          if (Test-Path (Join-Path $env:BACKUPAUTO_DADOS 'erros.log')) { Get-Content (Join-Path $env:BACKUPAUTO_DADOS 'erros.log') }
+          if ($p.ExitCode -ne 0 -or $copiados -ne 6) { Write-Host 'Teste das telas FALHOU.'; exit 1 }
+          Write-Host 'Teste das telas OK.'
+      - name: Guardar o programa e as imagens das telas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backup-automatico
+          path: |
+            backup-automatico/src/bin/Release/BackupAutomatico.exe
+            ${{ runner.temp }}/telas
+          if-no-files-found: ignore
