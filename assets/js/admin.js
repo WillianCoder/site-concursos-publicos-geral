@@ -88,7 +88,9 @@
     c.servicos.diario = Object.assign({ ativo: true, preco: 15, prazo: 'em até 2 dias úteis' }, c.servicos.diario || {});
     c.servicos.acompanhamento = Object.assign({ ativo: false, preco: 39, semanas: 4 }, c.servicos.acompanhamento || {});
     if (typeof c.marca !== 'string') c.marca = 'atlas';
-    c.limites = Object.assign({ buscasDia: 5, buscasDiaConta: 15, lembretes: 3, pedidosAbertos: 2, pedidosDia: 3 }, c.limites || {});
+    c.limites = Object.assign({ lembretes: 3, pedidosAbertos: 2, pedidosDia: 3 }, c.limites || {});
+    delete c.limites.buscasDia; delete c.limites.buscasDiaConta;   // a busca grátis virou ferramenta da equipe
+    c.mostrarAnuncie = c.mostrarAnuncie === true;
     return c;
   }
 
@@ -231,6 +233,7 @@
         if (!r.permissions || !r.permissions.push) throw new Error('Este token não tem permissão de escrita no repositório.');
         await loadRemote();
         sessionStorage.setItem(SS, JSON.stringify(session));
+        try { localStorage.setItem('atlas:equipe', '1'); } catch (e) {}   // libera a "Busca da equipe" no site neste aparelho
         renderApp();
       } catch (e) {
         session = null;
@@ -374,7 +377,7 @@
         check(agenda.itens.length >= 5, 'Agenda de Inscrições com pelo menos 5 concursos (ela traz visitas todo dia)', 'agenda') +
         check(cfg.pix.chave && cfg.pix.nome && cfg.pix.cidade, 'Pix configurado — QR Code nos pedidos e página <b>Apoie o Atlas</b> no ar', 'pix') +
         check(hasFirebase() && cfg.adminEmail, 'Contas ativadas (Firebase) e e-mail do administrador — libera Pedidos, Usuários e Lembretes', 'avancado') +
-        check(cfg.contato.whatsapp || cfg.contato.email, 'Contato comercial — página <b>Anuncie no Atlas</b> no ar', 'pix') +
+        check(cfg.contato.whatsapp, 'WhatsApp do negócio — recebe pedidos, comprovantes e pedidos de lembrete', 'pix') +
         check(cfg.recomendados.length, 'Pelo menos um link de afiliado (Amazon, Hotmart, Kiwify)', 'recomendados') +
         check(ativos.length, 'Primeiro patrocinador fechado (dica: ofereça o Destaque no estado aos cursinhos da sua cidade)', 'patrocinios') +
         check(cfg.siteUrl, 'Domínio próprio configurado (necessário para o AdSense)', 'avancado') +
@@ -382,6 +385,7 @@
       '</div></section>' +
       '<section class="section"><div class="section-head"><h2>Atalhos</h2></div><div class="adm-links">' +
         link(site, 'Ver o site', 'Abre o site publicado') +
+        link(new URL('./', location.href).href + '#/equipe/busca', 'Busca da equipe', 'Monta as buscas de um pedido (só aparece para você)') +
         link('https://github.com/' + session.owner + '/' + session.repo + '/actions', 'Automações', 'Publicação, Radar e verificação de links') +
         link('https://github.com/' + session.owner + '/' + session.repo + '/issues', 'Links reportados', 'Avisos de visitantes sobre links quebrados') +
         link('https://search.google.com/search-console', 'Google Search Console', 'Visitas vindas do Google') +
@@ -399,13 +403,13 @@
         pathInput('Valores sugeridos (R$)', 'pix.valores', (cfg.pix.valores || []).join(', '), { kind: 'list', ph: '5, 10, 20, 50', full: true }) +
       '</div><div id="adm-pix"></div></div>' +
       '<div class="panel panel-pad adm-section"><h2 style="font-size:18px">Serviço: Pesquisa no Diário Oficial</h2>' +
-        '<label class="check"><input type="checkbox" data-path="servicos.diario.ativo" data-kind="bool"' + (cfg.servicos.diario.ativo !== false ? ' checked' : '') + '> Serviço ativo (aparece no site e na página inicial do celular)</label>' +
+        '<label class="opt-check"><input type="checkbox" data-path="servicos.diario.ativo" data-kind="bool"' + (cfg.servicos.diario.ativo !== false ? ' checked' : '') + '> Serviço ativo (aparece no site e na página inicial do celular)</label>' +
         '<div class="adm-grid">' +
           pathInput('Preço (R$)', 'servicos.diario.preco', String(cfg.servicos.diario.preco), { kind: 'number', ph: '15' }) +
           pathInput('Prazo de entrega', 'servicos.diario.prazo', cfg.servicos.diario.prazo, { ph: 'em até 2 dias úteis' }) +
         '</div><p class="adm-help">O cliente paga pelo Pix configurado acima (com o código do pedido) e envia o comprovante para o WhatsApp abaixo. Os pedidos aparecem na aba <b>Pedidos</b>.</p>' +
         '<h3 style="font-size:15px;margin-top:6px">Plano extra: Acompanhamento</h3>' +
-        '<label class="check"><input type="checkbox" data-path="servicos.acompanhamento.ativo" data-kind="bool"' + (cfg.servicos.acompanhamento.ativo ? ' checked' : '') + '> Oferecer também o acompanhamento semanal (o cliente escolhe o plano no pedido)</label>' +
+        '<label class="opt-check"><input type="checkbox" data-path="servicos.acompanhamento.ativo" data-kind="bool"' + (cfg.servicos.acompanhamento.ativo ? ' checked' : '') + '> Oferecer também o acompanhamento semanal (o cliente escolhe o plano no pedido)</label>' +
         '<div class="adm-grid">' +
           pathInput('Preço do acompanhamento (R$)', 'servicos.acompanhamento.preco', String(cfg.servicos.acompanhamento.preco), { kind: 'number', ph: '39' }) +
           pathInput('Quantas semanas', 'servicos.acompanhamento.semanas', String(cfg.servicos.acompanhamento.semanas), { kind: 'number', ph: '4' }) +
@@ -520,7 +524,11 @@
       listEditor('dicasPatrocinadas', TIP, { title: 'data', empty: 'Nova dica', none: 'Nenhuma dica patrocinada agendada.', add: 'Agendar dica' });
   }
   function viewPacotes() {
-    return '<p class="adm-help">Tabela de preços exibida na página "Anuncie no Atlas". Aumente os valores conforme as visitas crescerem.</p>' +
+    return '<div class="panel panel-pad adm-section" style="margin-bottom:16px"><h2 style="font-size:18px">Página "Anuncie" e imagem dos planos</h2>' +
+        '<label class="opt-check"><input type="checkbox" data-path="mostrarAnuncie" data-kind="bool"' + (cfg.mostrarAnuncie ? ' checked' : '') + '> Mostrar a página "Anuncie" no site (menu, rodapé e "Anuncie aqui")</label>' +
+        '<p class="adm-help">Desligada, ela some do site, mas o endereço direto continua funcionando: <a class="grad-text" href="' + esc(new URL('./', location.href).href + '#/anuncie') + '" target="_blank" rel="noopener">abrir a página Anuncie</a>. Quando uma empresa chamar, mande a imagem dos planos ou esse link.</p>' +
+        '<div class="btn-row"><button class="btn btn-primary" type="button" id="pk-img">Baixar imagem dos planos (PNG)</button></div></div>' +
+      '<p class="adm-help">Tabela de preços da página "Anuncie" e da imagem dos planos. Aumente os valores conforme as visitas crescerem.</p>' +
       listEditor('pacotes', PKG, { title: 'nome', empty: 'Novo pacote', none: 'Sem pacotes.', add: 'Adicionar pacote' });
   }
   function viewAnuncios() {
@@ -645,7 +653,8 @@
     ],
     pedidos: [
       { id: 'DK3F9QAB', codigo: 'DK3F9QAB', nome: 'Maria Souza', whatsapp: '5511987654321', uf: 'SP', concurso: 'PM-SP Soldado 2025', inscricao: '123456', rg: '12.345.678', desde: '6m', obs: 'Esperando a convocação do exame médico', valor: 15, status: 'aguardando', criadoEm: today() + 'T11:00:00Z' },
-      { id: 'DK2A1ZXC', codigo: 'DK2A1ZXC', nome: 'João Lima', whatsapp: '5521912345678', uf: 'RJ', concurso: 'PMERJ Soldado', valor: 15, status: 'pago', criadoEm: addD(today(), -1) + 'T15:00:00Z' }
+      { id: 'DK2A1ZXC', codigo: 'DK2A1ZXC', nome: 'João Lima', whatsapp: '5521912345678', uf: 'RJ', concurso: 'PMERJ Soldado', valor: 15, status: 'pago', criadoEm: addD(today(), -1) + 'T15:00:00Z', pagoEm: addD(today(), -1) + 'T16:00:00Z' },
+      { id: 'DK1B7MNP', codigo: 'DK1B7MNP', nome: 'Ana Pereira', whatsapp: '5531998765432', uf: 'MG', concurso: 'PC-MG Investigador', inscricao: '778899', desde: '1a', plano: 'acompanhamento', valor: 39, status: 'pago', criadoEm: addD(today(), -9) + 'T10:00:00Z', pagoEm: addD(today(), -9) + 'T12:00:00Z', conferidoEm: addD(today(), -8), conferencias: 1 }
     ],
     lembretes: [
       { id: 'l1', nome: 'Maria Souza', whatsapp: '5511987654321', concurso: 'PM-SP Soldado 2025', prova: addD(today(), 7), avisos: ['p7', 'p1'], datas: { p7: today(), p1: addD(today(), 6) }, enviados: {} },
@@ -708,9 +717,10 @@
         }
       }
       const list = await fetchCol(myTab);
+      const pedidos = myTab === 'lembretes' ? await fetchCol('pedidos').catch(() => []) : null;
       if (tab !== myTab) return;
       FB.cache[myTab] = list;
-      ({ usuarios: drawUsers, pedidos: drawOrders, lembretes: drawReminders })[myTab](box, list);
+      ({ usuarios: drawUsers, pedidos: drawOrders, lembretes: drawReminders })[myTab](box, list, pedidos);
     } catch (e) {
       console.error(e);
       box.innerHTML = '<div class="panel panel-pad"><p class="badge danger" style="white-space:normal">Não foi possível carregar: ' + esc(e.code === 'permission-denied' ? 'sem permissão. Confira se o e-mail do administrador está confirmado e se as regras do Firestore foram publicadas com ele (aba Avançado).' : e.message || e) + '</p></div>';
@@ -742,10 +752,35 @@
   }
 
   const ORDER_ST = [['aguardando', 'Aguardando pagamento'], ['pago', 'Pago · pesquisar'], ['entregue', 'Entregue'], ['cancelado', 'Cancelado']];
+  // Abre a "Busca da equipe" no site já preenchida com os dados do pedido.
+  const teamLink = (p) => new URL('./', location.href).href + '#/equipe/busca?' + new URLSearchParams(Object.entries({
+    pedido: p.codigo || p.id, nome: p.nome, rg: p.rg, insc: p.inscricao, uf: p.uf, concurso: p.concurso, desde: p.desde
+  }).filter((x) => x[1])).toString();
+  // Alerta do Google: e-mail automático quando o nome aparecer numa página nova.
+  const alertLink = (p) => 'https://www.google.com/alerts?q=' + encodeURIComponent('"' + String(p.nome || '').trim() + '"');
+  /* Acompanhamento semanal: começa no pagamento e dura N semanas; a cada 7 dias o
+     pedido volta para a lista "Acompanhamentos para conferir" (aba Lembretes de hoje). */
+  function acomp(p) {
+    if (p.plano !== 'acompanhamento' || p.status !== 'pago') return null;
+    const sem = Math.max(1, Number(cfg.servicos.acompanhamento.semanas) || 4);
+    const ini = String(p.pagoEm || p.criadoEm).slice(0, 10);
+    const fim = addD(ini, sem * 7);
+    const feitas = Number(p.conferencias) || 0;
+    const ultima = p.conferidoEm || '';
+    const due = today() <= fim ? !ultima || ultima <= addD(today(), -7) : !ultima || ultima < fim;
+    return { sem, ini, fim, feitas, ultima, due, semana: Math.min(sem, Math.floor((new Date(today()) - new Date(ini)) / 604800000) + 1), acabou: today() > fim };
+  }
+  function acompMsg(p, a) {
+    const n = (p.nome || '').split(' ')[0];
+    return a.acabou
+      ? 'Olá, ' + n + '! Terminamos o acompanhamento do pedido ' + p.codigo + ' (' + a.sem + ' semanas). Até hoje não saiu publicação com o seu nome no Diário Oficial, no órgão nem na banca de ' + p.concurso + '. Se quiser renovar, é só responder aqui.'
+      : 'Olá, ' + n + '! Conferimos de novo o Diário Oficial, o órgão e a banca de ' + p.concurso + ' (semana ' + a.semana + ' de ' + a.sem + '): ainda não saiu publicação com o seu nome. Seguimos acompanhando e avisamos assim que sair.';
+  }
   const DESDE_TXT = { '3m': 'últimos 3 meses', '6m': 'últimos 6 meses', '1a': 'últimos 12 meses', tudo: 'desde o início do concurso' };
   function orderMsg(p) {
     const n = (p.nome || '').split(' ')[0];
     if (p.status === 'aguardando') return 'Olá, ' + n + '! Aqui é do Atlas Concursos. Recebemos seu pedido ' + p.codigo + ' da Pesquisa no Diário Oficial. Assim que o Pix de ' + brl(p.valor) + ' for confirmado, começamos a pesquisa.';
+    if (p.status === 'pago' && p.plano === 'acompanhamento') return 'Olá, ' + n + '! Pagamento do pedido ' + p.codigo + ' confirmado. Fazemos a primeira pesquisa ' + cfg.servicos.diario.prazo + ' e depois conferimos toda semana durante ' + cfg.servicos.acompanhamento.semanas + ' semanas. Avisamos aqui assim que seu nome sair.';
     if (p.status === 'pago') return 'Olá, ' + n + '! Pagamento do pedido ' + p.codigo + ' confirmado. Já estamos procurando seu nome e enviamos o resultado ' + cfg.servicos.diario.prazo + '.';
     if (p.status === 'entregue') return 'Olá, ' + n + '! Segue o resultado da sua Pesquisa no Diário Oficial (pedido ' + p.codigo + '):\n\n';
     return 'Olá, ' + n + '! Sobre o pedido ' + p.codigo + ' do Atlas Concursos:';
@@ -759,15 +794,17 @@
         '<div class="panel adm-item" data-oid="' + esc(p.id) + '"><div class="adm-item-head"><h3>' + esc(p.codigo || p.id) + ' · ' + esc(p.nome) + '</h3><span class="badge">' + brl(p.valor) + '</span></div>' +
           '<div class="adm-help">' + (p.plano === 'acompanhamento' ? '<span class="badge accent">Acompanhamento</span> ' : '') + '<b>' + esc(p.concurso) + '</b>' + (p.uf ? ' (' + esc(p.uf) + ')' : '') + ' · pedido em ' + esc(fmtD(p.criadoEm)) +
             (p.inscricao ? ' · inscrição <b>' + esc(p.inscricao) + '</b>' : '') + (p.rg ? ' · RG <b>' + esc(p.rg) + '</b>' : '') + (p.desde ? ' · procurar nos ' + esc(DESDE_TXT[p.desde] || p.desde) : '') +
-            (p.obs ? '<br>Obs.: ' + esc(p.obs) : '') + (p.email ? '<br>Conta: ' + esc(p.email) : '') + '</div>' +
+            (p.obs ? '<br>Obs.: ' + esc(p.obs) : '') + (p.email ? '<br>Conta: ' + esc(p.email) : '') +
+            (acomp(p) ? '<br>Acompanhamento: semana <b>' + acomp(p).semana + ' de ' + acomp(p).sem + '</b> · ' + acomp(p).feitas + (acomp(p).feitas === 1 ? ' conferência' : ' conferências') + (acomp(p).ultima ? ' · última em ' + esc(fmtD(acomp(p).ultima)) : '') + ' · termina em ' + esc(fmtD(acomp(p).fim)) : '') + '</div>' +
           '<div class="btn-row"><select class="select" data-ost style="max-width:240px">' + ORDER_ST.map((o) => '<option value="' + o[0] + '"' + (p.status === o[0] ? ' selected' : '') + '>' + o[1] + '</option>').join('') + '</select>' +
             (p.whatsapp ? '<a class="btn btn-sm btn-primary" href="' + esc(waTo(p.whatsapp, orderMsg(p))) + '" target="_blank" rel="noopener">WhatsApp ' + esc(fmtW(p.whatsapp)) + '</a>' : '') +
-            '<a class="btn btn-sm" href="' + esc(new URL('./', location.href).href + '#/meu-nome' + (p.uf && p.uf !== 'BR' ? '/' + p.uf : '')) + '" target="_blank" rel="noopener">Abrir a busca</a></div></div>').join('')
+            '<a class="btn btn-sm" href="' + esc(teamLink(p)) + '" target="_blank" rel="noopener">Abrir a busca</a>' +
+            (p.status === 'pago' || p.status === 'entregue' ? '<a class="btn btn-sm" href="' + esc(alertLink(p)) + '" target="_blank" rel="noopener" title="E-mail automático quando o nome aparecer numa página nova">Alerta no Google</a>' : '') + '</div></div>').join('')
         : '<div class="empty">Nenhum pedido aqui.</div>';
     };
     box.innerHTML = '<div class="kpis"><div class="kpi"><b>' + list.filter((p) => p.status === 'aguardando').length + '</b><span>aguardando pagamento</span></div><div class="kpi"><b>' + list.filter((p) => p.status === 'pago').length + '</b><span>pagos para pesquisar</span></div><div class="kpi"><b>' + brl(sum('pago') + sum('entregue')) + '</b><span>recebido (pagos + entregues)</span></div><div class="kpi"><b>' + list.filter((p) => p.status === 'entregue').length + '</b><span>entregues</span></div></div>' +
       '<div class="adm-tabs" id="o-filt">' + [['ativos', 'Em aberto'], ['aguardando', 'Aguardando'], ['pago', 'Pagos'], ['entregue', 'Entregues'], ['todos', 'Todos']].map((x) => '<button class="chip' + (x[0] === filt ? ' sel' : '') + '" data-of="' + x[0] + '">' + x[1] + '</button>').join('') + '</div>' +
-      '<p class="adm-help">Confirme o Pix <b>no app do banco</b> (não só pelo comprovante) antes de marcar como pago. Ao mudar a situação, o cliente vê o novo status na conta dele.</p>' +
+      '<p class="adm-help">Confirme o Pix <b>no app do banco</b> (não só pelo comprovante) antes de marcar como pago. Ao mudar a situação, o cliente vê o novo status na conta dele. <b>Abrir a busca</b> monta as pesquisas com os dados do cliente; <b>Alerta no Google</b> cria um aviso por e-mail para quando o nome aparecer numa página nova (útil no acompanhamento).</p>' +
       '<div class="adm-section" id="o-list"></div>';
     $('#o-filt', box).addEventListener('click', (e) => { const b = e.target.closest('[data-of]'); if (!b) return; filt = b.dataset.of; $$('[data-of]', box).forEach((x) => x.classList.toggle('sel', x === b)); draw(); });
     $('#o-list', box).addEventListener('change', async (e) => {
@@ -775,7 +812,9 @@
       const p = list.find((x) => x.id === sel.closest('[data-oid]').dataset.oid);
       const prev = p.status;
       p.status = sel.value;
-      try { await updateDocAdm('pedidos', p.id, { status: p.status, atualizadoEm: new Date().toISOString() }); toast('Pedido ' + (p.codigo || p.id) + ': ' + ORDER_ST.find((o) => o[0] === p.status)[1]); draw(); }
+      const upd = { status: p.status, atualizadoEm: new Date().toISOString() };
+      if (p.status === 'pago' && !p.pagoEm) upd.pagoEm = p.pagoEm = upd.atualizadoEm;   // o acompanhamento conta as semanas a partir daqui
+      try { await updateDocAdm('pedidos', p.id, upd); toast('Pedido ' + (p.codigo || p.id) + ': ' + ORDER_ST.find((o) => o[0] === p.status)[1]); draw(); }
       catch (err) { p.status = prev; sel.value = prev; toast('Não foi possível salvar: ' + err.message); }
     });
     draw();
@@ -792,7 +831,7 @@
       res: 'Olá, ' + n + '! O resultado de ' + c + ' está previsto para hoje (' + fmtD(l.resultado) + '). Quer que a gente procure seu nome no Diário Oficial por ' + brl(cfg.servicos.diario.preco) + '? É só responder esta mensagem. 🔎'
     })[k] + '\n\n(Para não receber mais, responda SAIR.)';
   }
-  function drawReminders(box, list) {
+  function drawReminders(box, list, pedidos) {
     const t = today();
     const due = [], soon = [];
     list.forEach((l) => (l.avisos || []).forEach((k) => {
@@ -804,7 +843,16 @@
     soon.sort((a, b) => a.d.localeCompare(b.d));
     const row = (x, send) => '<div class="row" data-lid="' + esc(x.l.id) + '" data-lk="' + x.k + '"><div class="grow"><div class="title">' + esc(x.l.nome || '(sem nome)') + ' · ' + esc(AVISO_TXT[x.k]) + '</div><div class="sub">' + esc(x.l.concurso) + ' · ' + esc(fmtD(x.d)) + ' · ' + esc(fmtW(x.l.whatsapp)) + '</div></div>' +
       (send ? '<a class="btn btn-sm btn-primary" data-send href="' + esc(waTo(x.l.whatsapp, reminderMsg(x.l, x.k))) + '" target="_blank" rel="noopener">Enviar no WhatsApp</a><button class="btn btn-sm" data-sent type="button">Marcar enviado</button>' : '') + '</div>';
-    box.innerHTML = '<div class="kpis"><div class="kpi"><b>' + due.length + '</b><span>lembretes para enviar hoje</span></div><div class="kpi"><b>' + soon.length + '</b><span>nos próximos 7 dias</span></div><div class="kpi"><b>' + list.length + '</b><span>concursos com lembrete</span></div></div>' +
+    const acs = (pedidos || []).map((p) => ({ p, a: acomp(p) })).filter((x) => x.a && x.a.due);
+    const acRow = (x) => '<div class="row" data-acid="' + esc(x.p.id) + '" style="flex-wrap:wrap"><div class="grow"><div class="title">' + esc(x.p.nome) + ' · ' + esc(x.p.codigo || x.p.id) + '</div>' +
+      '<div class="sub">' + esc(x.p.concurso) + (x.p.uf ? ' (' + esc(x.p.uf) + ')' : '') + ' · ' + (x.a.acabou ? 'última semana encerrada' : 'semana ' + x.a.semana + ' de ' + x.a.sem) + (x.a.ultima ? ' · conferido em ' + esc(fmtD(x.a.ultima)) : ' · ainda não conferido') + '</div></div>' +
+      '<a class="btn btn-sm" href="' + esc(teamLink(x.p)) + '" target="_blank" rel="noopener">Abrir a busca</a>' +
+      (x.p.whatsapp ? '<a class="btn btn-sm" href="' + esc(waTo(x.p.whatsapp, acompMsg(x.p, x.a))) + '" target="_blank" rel="noopener">Avisar no WhatsApp</a>' : '') +
+      '<button class="btn btn-sm btn-primary" data-conf type="button">Conferi hoje</button></div>';
+    box.innerHTML = '<div class="kpis"><div class="kpi"><b>' + due.length + '</b><span>lembretes para enviar hoje</span></div><div class="kpi"><b>' + soon.length + '</b><span>nos próximos 7 dias</span></div><div class="kpi"><b>' + list.length + '</b><span>concursos com lembrete</span></div>' + (pedidos ? '<div class="kpi"><b>' + acs.length + '</b><span>acompanhamentos para conferir</span></div>' : '') + '</div>' +
+      (acs.length ? '<section class="section"><div class="section-head"><h2 style="font-size:17px">Acompanhamentos para conferir</h2></div>' +
+        '<p class="adm-help">Clientes do acompanhamento semanal. Abra a busca, confira as publicações da semana (e os e-mails do Alerta no Google), avise o cliente e toque em <b>Conferi hoje</b>: o pedido volta para esta lista daqui a 7 dias. Quando o nome sair, mande o resultado e marque o pedido como <b>Entregue</b> na aba Pedidos.</p>' +
+        '<div class="list" id="ac-list">' + acs.map(acRow).join('') + '</div></section>' : '') +
       '<p class="adm-help">Toque em <b>Enviar no WhatsApp</b>: a mensagem já vai pronta e o lembrete é marcado como enviado. Lembretes atrasados até 2 dias também aparecem aqui.</p>' +
       '<section class="section"><div class="section-head"><h2 style="font-size:17px">Enviar hoje</h2></div><div class="list" id="l-due">' + (due.length ? due.map((x) => row(x, true)).join('') : '<div class="empty">Nenhum lembrete para hoje. 🎉</div>') + '</div></section>' +
       (soon.length ? '<section class="section"><div class="section-head"><h2 style="font-size:17px">Próximos 7 dias</h2></div><div class="list">' + soon.map((x) => row(x, false)).join('') + '</div></section>' : '');
@@ -814,6 +862,18 @@
       try { await updateDocAdm('lembretes', l.id, { ['enviados.' + k]: t }); r.classList.add('done'); r.querySelectorAll('[data-sent],[data-send]').forEach((b) => b.remove()); r.insertAdjacentHTML('beforeend', '<span class="badge ok">enviado</span>'); }
       catch (err) { toast('Não foi possível marcar: ' + err.message); }
     };
+    const acList = $('#ac-list', box);
+    if (acList) acList.addEventListener('click', async (e) => {
+      const b = e.target.closest('[data-conf]'); if (!b) return;
+      const r = b.closest('[data-acid]');
+      const p = pedidos.find((x) => x.id === r.dataset.acid);
+      const n = (Number(p.conferencias) || 0) + 1;
+      try {
+        await updateDocAdm('pedidos', p.id, { conferidoEm: today(), conferencias: n, atualizadoEm: new Date().toISOString() });
+        p.conferidoEm = today(); p.conferencias = n;
+        r.classList.add('done'); b.remove(); r.insertAdjacentHTML('beforeend', '<span class="badge ok">conferido hoje</span>');
+      } catch (err) { toast('Não foi possível marcar: ' + err.message); }
+    });
     $('#l-due', box).addEventListener('click', (e) => {
       const r = e.target.closest('[data-lid]'); if (!r) return;
       if (e.target.closest('[data-send]')) setTimeout(() => mark(r), 300);
@@ -901,16 +961,78 @@ service cloud.firestore {
         '<p class="adm-help">O endereço do site (atlas-concursos.pages.dev) continua o mesmo. Se trocar de vez, registre o domínio da marca (ex.: ' + esc(atual.p1.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() + atual.p2.toLowerCase()) + '.com.br) e confira o nome no INPI antes de divulgar.</p></div>';
   }
 
+  /* ---------- Imagem dos planos (para mandar às empresas no WhatsApp) ---------- */
+  async function plansImage() {
+    const m = MARCAS.find((y) => y.id === cfg.marca) || MARCAS[0];
+    const pk = cfg.pacotes.filter((p) => p.nome);
+    const W = 1080, PAD = 64, CW = W - PAD * 2, IN = 34;
+    const c = document.createElement('canvas');
+    const x = c.getContext('2d');
+    const F = (w, size, fam) => w + ' ' + size + 'px "' + (fam || 'Inter') + '", system-ui, sans-serif';
+    try { await Promise.all([F(700, 40, 'Space Grotesk'), F(400, 27), F(500, 24), F(600, 28)].map((f) => document.fonts.load(f))); } catch (e) { /* usa a fonte do sistema */ }
+    const wrap = (t, font, max) => {
+      x.font = font;
+      const out = []; let line = '';
+      String(t || '').split(/\s+/).filter(Boolean).forEach((w) => { const l = line ? line + ' ' + w : w; if (line && x.measureText(l).width > max) { out.push(line); line = w; } else line = l; });
+      if (line) out.push(line);
+      return out;
+    };
+    const cards = pk.map((p) => {
+      x.font = F(700, 38, 'Space Grotesk');
+      const pw = x.measureText(p.preco || '').width;
+      const nome = wrap(p.nome, F(700, 33, 'Space Grotesk'), CW - IN * 2 - pw - 28);
+      const desc = wrap(p.desc, F(400, 27), CW - IN * 2);
+      const ideal = p.ideal ? wrap('Ideal para: ' + p.ideal, F(500, 24), CW - IN * 2) : [];
+      return { p, nome, desc, ideal, h: IN + nome.length * 42 + 12 + desc.length * 37 + (ideal.length ? 10 + ideal.length * 32 : 0) + IN - 6 };
+    });
+    const HEAD = 400, FOOT = 220, GAP = 22;
+    const H = HEAD + cards.reduce((t, k) => t + k.h + GAP, 0) + FOOT;
+    c.width = W; c.height = H;
+    const bg = x.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#0b1020'); bg.addColorStop(1, '#121833');
+    x.fillStyle = bg; x.fillRect(0, 0, W, H);
+    const glow = x.createRadialGradient(W - 120, 60, 10, W - 120, 60, 560); glow.addColorStop(0, 'rgba(139,92,246,.32)'); glow.addColorStop(1, 'rgba(139,92,246,0)');
+    x.fillStyle = glow; x.fillRect(0, 0, W, H);
+    const grad = x.createLinearGradient(PAD, 0, W - PAD, 0); grad.addColorStop(0, '#22d3ee'); grad.addColorStop(1, '#8b5cf6');
+    const box = (bx, by, bw, bh, r) => { x.beginPath(); x.moveTo(bx + r, by); x.arcTo(bx + bw, by, bx + bw, by + bh, r); x.arcTo(bx + bw, by + bh, bx, by + bh, r); x.arcTo(bx, by + bh, bx, by, r); x.arcTo(bx, by, bx + bw, by, r); x.closePath(); };
+    // Marca
+    const logo = await new Promise((res) => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = 'assets/marcas/' + m.id + '/logo.svg'; });
+    let bx = PAD;
+    if (logo) { x.drawImage(logo, PAD, 58, 76, 76); bx += 96; }
+    x.textBaseline = 'middle';
+    x.font = F(700, 42, 'Space Grotesk'); x.fillStyle = '#fff'; x.fillText(m.p1, bx, 98);
+    x.fillStyle = grad; x.fillText(m.p2, bx + x.measureText(m.p1 + ' ').width, 98);
+    x.textBaseline = 'alphabetic';
+    // Título
+    x.font = F(700, 60, 'Space Grotesk'); x.fillStyle = '#fff'; x.fillText('Anuncie para quem', PAD, 238);
+    x.fillStyle = grad; x.fillText('estuda para concurso', PAD, 308);
+    x.font = F(400, 28); x.fillStyle = '#aab2d5'; x.fillText('Planos de patrocínio com preço fixo · sem contrato longo', PAD, 362);
+    // Planos
+    let y = HEAD;
+    cards.forEach((k) => {
+      box(PAD, y, CW, k.h, 22); x.fillStyle = 'rgba(255,255,255,.05)'; x.fill(); x.strokeStyle = 'rgba(148,163,255,.25)'; x.lineWidth = 2; x.stroke();
+      let ty = y + IN + 28;
+      x.font = F(700, 38, 'Space Grotesk'); x.fillStyle = grad; x.textAlign = 'right'; x.fillText(k.p.preco || '', W - PAD - IN, ty + 2); x.textAlign = 'left';
+      x.font = F(700, 33, 'Space Grotesk'); x.fillStyle = '#fff'; k.nome.forEach((l) => { x.fillText(l, PAD + IN, ty); ty += 42; });
+      ty += 12 - 42 + 37;
+      x.font = F(400, 27); x.fillStyle = '#c9cfea'; k.desc.forEach((l) => { x.fillText(l, PAD + IN, ty); ty += 37; });
+      if (k.ideal.length) { ty += 10 - 37 + 32; x.font = F(500, 24); x.fillStyle = '#8f98c2'; k.ideal.forEach((l) => { x.fillText(l, PAD + IN, ty); ty += 32; }); }
+      y += k.h + GAP;
+    });
+    // Contato
+    y += 30;
+    x.font = F(500, 26); x.fillStyle = '#aab2d5'; x.fillText('Todo anúncio leva a etiqueta "Patrocinado". Fale com a gente:', PAD, y + 20);
+    x.font = F(700, 46, 'Space Grotesk'); x.fillStyle = '#fff';
+    x.fillText(cfg.contato.whatsapp ? 'WhatsApp ' + fmtW(cfg.contato.whatsapp) : (cfg.contato.email || ''), PAD, y + 86);
+    if (cfg.siteUrl) { x.font = F(500, 26); x.fillStyle = grad; x.fillText(String(cfg.siteUrl).replace(/^https?:\/\//, '').replace(/\/$/, ''), PAD, y + 136); }
+    return new Promise((res) => c.toBlob(res, 'image/png'));
+  }
+
   /* ---------- Limites de uso ---------- */
   function viewLimites() {
     const L = cfg.limites;
     const n = (label, key, help) => pathInput(label, 'limites.' + key, String(L[key]), { kind: 'number', ph: '0', help });
-    return '<p class="adm-help">Os limites deixam o serviço profissional e protegem o seu tempo: o visitante usa o grátis com folga e, quando precisa de mais, encontra o serviço pago. <b>0 = sem limite.</b> Os contadores zeram todo dia à meia-noite.</p>' +
+    return '<p class="adm-help">Os limites deixam o serviço profissional e protegem o seu tempo. <b>0 = sem limite.</b> Os contadores de pedidos zeram todo dia à meia-noite. A pesquisa do nome no Diário não tem versão grátis: ela é feita pela equipe, com a <b>Busca da equipe</b> (botão "Abrir a busca" em cada pedido).</p>' +
       '<div class="tool-layout">' +
-        '<div class="panel panel-pad adm-section"><h2 style="font-size:18px">Busca grátis "Meu nome no Diário"</h2><div class="adm-grid">' +
-          n('Buscas por dia (visitante)', 'buscasDia', 'Sem conta. Ao acabar, o site oferece a pesquisa paga.') +
-          n('Buscas por dia (com conta)', 'buscasDiaConta', 'Incentiva o cadastro: quem cria conta busca mais.') +
-        '</div></div>' +
         '<div class="panel panel-pad adm-section"><h2 style="font-size:18px">Pedidos e lembretes</h2><div class="adm-grid">' +
           n('Pedidos aguardando pagamento por pessoa', 'pedidosAbertos', 'Evita pedidos falsos: só faz outro depois de pagar ou cancelar.') +
           n('Pedidos por dia por pessoa', 'pedidosDia', 'Proteção contra abuso.') +
@@ -962,6 +1084,14 @@ service cloud.firestore {
     }));
     drawPix(root);
     bindTeste(root);
+    const pi = $('#pk-img', root);
+    if (pi) pi.addEventListener('click', async () => {
+      const blob = await plansImage();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = 'planos-anuncie.png'; a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+      toast('Imagem baixada. Mande no WhatsApp para a empresa.');
+    });
     $$('input[name="marca"]', root).forEach((r) => r.addEventListener('change', () => { cfg.marca = r.value; setDirty(true); renderApp(); }));
     if (CLOUD_TABS.includes(tab)) loadCloudTab(root);
     const rc = $('#adm-rules-copy', root);

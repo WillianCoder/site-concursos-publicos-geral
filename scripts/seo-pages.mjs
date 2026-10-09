@@ -28,6 +28,7 @@ const today = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);   //
 const fmt = (k) => (k ? k.split('-').reverse().join('/') : '');
 const slug = (uf) => uf.toLowerCase();
 const preco = Number(((CFG.servicos || {}).diario || {}).preco) || 15;
+const ativo = ((CFG.servicos || {}).diario || {}).ativo !== false && !!String((CFG.contato || {}).whatsapp || '').replace(/\D/g, '');
 const ufRank = { SP: 0, RJ: 1, MG: 2, BA: 3, PR: 4, RS: 5 };
 
 const GROUPS = [
@@ -121,8 +122,7 @@ function statePage(e) {
     <p class="lead">Todos os sites oficiais dos órgãos que fazem concurso em ${esc(name)}, num só lugar. Os editais estaduais saem no <b>Diário Oficial do Estado</b>${e.links.doe ? ` (<a class="grad-text" href="${esc(e.links.doe)}" rel="noopener" target="_blank">abrir</a>)` : ''}.</p></div>
     <div class="ctas">
       <a class="cta" href="../#/uf/${e.uf}"><b>Abrir ${esc(name)} no Atlas</b><span>Busca, links salvos e atalhos para o Diário Oficial.</span></a>
-      <a class="cta" href="../#/meu-nome/${e.uf}"><b>Procurar meu nome no Diário Oficial</b><span>Convocação, resultado e nomeação: buscas prontas grátis.</span></a>
-      <a class="cta" href="../#/pesquisa-diario"><b>Nós procuramos para você · R$ ${preco}</b><span>Resultado explicado no WhatsApp.</span></a>
+      ${ativo ? `<a class="cta" href="../#/pesquisa-diario/${e.uf}"><b>Procuramos seu nome no Diário Oficial · R$ ${preco}</b><span>Convocação, resultado e nomeação, explicados no WhatsApp.</span></a>` : ''}
     </div>
     <section><h2>Inscrições abertas hoje em ${esc(name)}</h2>${open.length
       ? `<div class="open">${open.map((x) => `<a href="${esc(x.u)}" rel="noopener" target="_blank">${esc(x.t)}<small>${esc(x.sub)}</small></a>`).join('')}</div><p class="lead" style="font-size:14px;margin-top:8px">Atualizado em ${fmt(today)}. Confirme datas e requisitos no edital oficial.</p>`

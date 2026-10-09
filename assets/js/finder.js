@@ -1,24 +1,30 @@
 /*
- * Atlas Concursos — "Meu nome no Diário Oficial".
- * Monta buscas avançadas e organizadas para o candidato achar o próprio nome,
- * RG ou número de inscrição em diários oficiais, sites dos órgãos e bancas.
- * Nada é enviado para servidores do Atlas: os dados ficam no aparelho.
+ * Atlas Concursos — busca da equipe "Meu nome no Diário Oficial".
+ * Ferramenta interna: monta as buscas certas (Diário Oficial do estado, site do
+ * órgão, bancas e Diário Oficial da União) para a equipe procurar o nome de quem
+ * pediu a pesquisa paga. Não aparece para o público: o Painel liga o modo equipe
+ * neste aparelho (localStorage "atlas:equipe") e abre esta página já preenchida
+ * com os dados do pedido. Não é uma trava de segurança — a página só monta links
+ * de pesquisa —, é só para o serviço não ter uma versão grátis à mostra.
+ * O endereço antigo #/meu-nome leva para o serviço pago (#/pesquisa-diario).
  */
 (function () {
   'use strict';
   const A = window.Atlas;
-  const { $, $$, esc, icon, toast, route, Store } = A;
+  const { $, esc, icon, route } = A;
   const DATA = window.ATLAS_DATA;
 
   const BANCAS = ['cebraspe.org.br', 'fgv.br', 'concursosfcc.com.br', 'vunesp.com.br', 'cesgranrio.org.br', 'ibfc.org.br', 'institutoaocp.org.br', 'quadrix.org.br', 'idecan.org.br', 'institutoconsulplan.org.br', 'fundatec.org.br', 'iades.com.br', 'fumarc.com.br', 'fepese.org.br', 'objetivas.com.br'];
   const TIPOS_ORG = ['pm', 'pc', 'cbm', 'tj', 'mp', 'dpe', 'tre', 'sefaz', 'tce', 'al', 'gov'];
+  const TEAM = 'atlas:equipe';
+  const isTeam = () => { try { return localStorage.getItem(TEAM) === '1'; } catch (e) { return false; } };
+  A.team = { is: isTeam, set(on) { try { if (on) localStorage.setItem(TEAM, '1'); else localStorage.removeItem(TEAM); } catch (e) {} } };
+  A.navTop.push({ href: '#/pesquisa-diario', icon: 'search', label: 'Meu nome no Diário', show: () => !!(A.services && A.services.active()) });
+  A.nav.push({ href: '#/equipe/busca', icon: 'shield', label: 'Busca da equipe', show: isTeam });
 
-  A.navTop.push({ href: '#/meu-nome', icon: 'search', label: 'Meu nome no Diário' });
-  A.pages.push({ n: 'Meu nome no Diário Oficial (procurar RG, inscrição, convocação)', href: '#/meu-nome', ic: 'search', sub: 'Ferramenta' });
-
-  // Atalho "Procurar meu nome" em cada órgão estadual.
-  A.cardBadges.push((it) => it.uf && it.tipo && it.tipo !== 'trt'
-    ? '<a class="chip find-chip" href="#/meu-nome/' + it.uf + '/' + it.tipo + '">' + icon('search') + 'Procurar meu nome nos editais</a>' : '');
+  // Atalho para o serviço pago em cada órgão estadual.
+  A.cardBadges.push((it) => it.uf && it.tipo && it.tipo !== 'trt' && A.services && A.services.active()
+    ? '<a class="chip find-chip" href="#/pesquisa-diario/' + it.uf + '">' + icon('search') + 'Procuramos seu nome no Diário</a>' : '');
 
   /* ---------- Formatos de documento ---------- */
   const digits = (s) => String(s || '').replace(/\D/g, '');
@@ -48,6 +54,7 @@
   const q = (s) => '"' + String(s).replace(/"/g, '') + '"';
   const google = (query) => 'https://www.google.com/search?q=' + encodeURIComponent(query);
   const host = (u) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return ''; } };
+  const alerts = (term) => 'https://www.google.com/alerts?q=' + encodeURIComponent(term);
   const dou = (term) => 'https://www.in.gov.br/consulta/-/buscar/dou?q=' + encodeURIComponent(term) + '&s=todos&exactDate=all&sortType=0';
 
   /* ---------- Página ---------- */
@@ -65,26 +72,51 @@
     return out.slice(0, 3);
   }
 
-  route(/^\/meu-nome(?:\/([A-Za-z]{2}))?(?:\/([a-z]+))?$/, 'meu-nome', function (uf, org) {
-    const saved = Store.state.nameWatch || {};
-    if (!form.nome && saved.nome) Object.assign(form, saved, { cpf: '' });
-    if (uf) form.uf = uf.toUpperCase();
-    if (org) form.org = org;
-    if (!form.uf) form.uf = Store.state.profile.uf || '';
-    if (!form.rgUf) form.rgUf = form.uf;
+  // Adivinha o órgão pelo texto do pedido ("PMERJ Soldado" → PM).
+  const ORG_HINTS = [['pm', /\bpm|pol[ií]cia militar|soldado/], ['cbm', /bombeir|\bcbm/], ['pc', /\bpc|pol[ií]cia civil|delegad|escriv[aã]o|investigador/], ['tj', /\btj|tribunal de justi|escrevente/],
+    ['mp', /\bmp|minist[ée]rio p[úu]blico/], ['dpe', /defensoria|\bdpe/], ['tre', /\btre\b|eleitoral/], ['sefaz', /sefaz|fazenda|auditor fiscal/], ['tce', /\btce|tribunal de contas/], ['al', /assembleia/]];
+  const guessOrg = (txt, e) => { const t = String(txt || '').toLowerCase(); const hit = ORG_HINTS.find((h) => h[1].test(t) && e && e.items[h[0]]); return hit ? hit[0] : ''; };
+  const DESDE = { '3m': 'últimos 3 meses', '6m': 'últimos 6 meses', '1a': 'últimos 12 meses' };
+  let pedido = {};   // dados do pedido que o Painel mandou (código, concurso, período)
+  const toHash = () => '#/equipe/busca?' + new URLSearchParams(Object.entries(Object.assign({}, pedido, form, { cpf: '' })).filter((x) => x[1])).toString();
+
+  // Endereço antigo da busca grátis: agora leva para o serviço pago.
+  route(/^\/meu-nome(?:\/([A-Za-z]{2}))?(?:\/[a-z]+)?$/, 'meu-nome', function (uf) {
+    location.replace('#/pesquisa-diario' + (uf ? '/' + uf.toUpperCase() : ''));
+    return { title: 'Pesquisa no Diário Oficial', html: '' };
+  });
+
+  route(/^\/equipe\/busca(?:\?.*)?$/, 'equipe-busca', function () {
+    if (!isTeam()) {
+      location.replace('#/pesquisa-diario');
+      return { title: 'Pesquisa no Diário Oficial', html: '' };
+    }
+    const qs = new URLSearchParams(location.hash.split('?')[1] || '');
+    if ([...qs.keys()].length) {
+      Object.keys(form).forEach((k) => { if (k !== 'cpf') form[k] = qs.get(k) || ''; });
+      pedido = { pedido: qs.get('pedido') || '', concurso: qs.get('concurso') || '', desde: qs.get('desde') || '' };
+      form.uf = (form.uf || '').toUpperCase();
+      if (form.uf === 'BR') form.uf = '';
+      if (!form.rgUf) form.rgUf = form.uf;
+      if (!form.org && !qs.has('org')) form.org = guessOrg(pedido.concurso, A.ufBy[form.uf]);
+    }
     const e = A.ufBy[form.uf];
     const orgOptions = e ? TIPOS_ORG.filter((k) => e.items[k]).map((k) => '<option value="' + k + '"' + (form.org === k ? ' selected' : '') + '>' + esc(DATA.tipos[k].nome) + '</option>').join('') : '';
+    const info = pedido.pedido
+      ? '<div class="panel panel-pad finder-order"><span class="eyebrow">' + icon('clipboard') + 'Pedido ' + esc(pedido.pedido) + '</span>' +
+        '<p style="margin-top:6px"><b>' + esc(pedido.concurso || 'Concurso não informado') + '</b>' + (pedido.desde && DESDE[pedido.desde] ? ' · procurar nos ' + DESDE[pedido.desde] : '') + '</p></div>'
+      : '';
 
     return {
-      title: 'Meu nome no Diário Oficial',
-      crumbs: [['Início', '#/'], ['Meu nome no Diário Oficial', '#/meu-nome']],
+      title: 'Busca da equipe',
+      crumbs: [['Início', '#/'], ['Busca da equipe', '#/equipe/busca']],
       html:
-        '<div class="page-head"><div><span class="eyebrow">' + icon('search') + 'Busca avançada grátis</span><h1>Encontre seu nome no Diário Oficial</h1>' +
-        '<p>Convocação, resultado, exame médico, nomeação: tudo sai em diário oficial, em PDFs enormes. Informe seus dados e o Atlas monta as buscas certas em cada lugar, já com os formatos que os diários usam.</p></div></div>' +
-        (A.services ? A.services.promo() : '') +
+        '<div class="page-head"><div><span class="eyebrow">' + icon('shield') + 'Uso interno da equipe</span><h1>Busca do pedido no Diário Oficial</h1>' +
+        '<p>Preencha com os dados do cliente (o Painel já abre esta página preenchida) e o Atlas monta as buscas certas em cada lugar, com os formatos que os diários usam.</p></div></div>' +
+        info +
         '<div class="finder">' +
           '<form class="panel panel-pad finder-form" id="finder-form" autocomplete="off">' +
-            '<label class="field full">Nome completo<input class="input" id="f-nome" name="nome" value="' + esc(form.nome) + '" placeholder="Como está no documento" autocomplete="name"></label>' +
+            '<label class="field full">Nome completo<input class="input" id="f-nome" name="nome" value="' + esc(form.nome) + '" placeholder="Como está no documento"></label>' +
             '<label class="field">RG<input class="input" id="f-rg" name="rg" value="' + esc(form.rg) + '" placeholder="Ex.: 12.345.678" inputmode="numeric"></label>' +
             '<label class="field">UF do RG<select class="select" id="f-rguf" name="rgUf"><option value="">—</option>' + DATA.estados.map((x) => '<option' + (form.rgUf === x.uf ? ' selected' : '') + '>' + x.uf + '</option>').join('') + '</select></label>' +
             '<label class="field">Nº de inscrição no concurso<input class="input" id="f-insc" name="insc" value="' + esc(form.insc) + '" placeholder="Opcional"></label>' +
@@ -94,26 +126,24 @@
             '<label class="field full"><span>Banca do concurso <span class="muted">(se souber)</span></span><select class="select" id="f-banca" name="banca"><option value="">Não sei / procurar em todas</option>' +
               A.bancas.list.map((b) => '<option value="' + esc(b.host) + '"' + (form.banca === b.host ? ' selected' : '') + '>' + esc(b.n) + '</option>').join('') + '</select></label>' +
             '<label class="field full"><span>Palavra-chave do concurso <span class="muted">(opcional)</span></span><input class="input" id="f-extra" name="extra" value="' + esc(form.extra) + '" placeholder="Ex.: soldado, CFSd 2026, escrevente"></label>' +
-            '<div class="btn-row full"><button class="btn btn-primary" type="submit">' + icon('search') + 'Montar minhas buscas</button>' +
-              '<button class="btn" type="button" id="f-save">' + icon('star') + 'Salvar para buscar de novo</button><span class="muted small" id="finder-left"></span></div>' +
-            '<p class="muted small full">' + icon('shield', 'i-inline') + ' Seus dados ficam só neste aparelho. Ao tocar em "Buscar", o termo vai para o site escolhido como qualquer pesquisa. O CPF completo nunca é usado: os diários mostram só o meio dele (***.456.789-**).</p>' +
+            '<div class="btn-row full"><button class="btn btn-primary" type="submit">' + icon('search') + 'Montar as buscas</button></div>' +
+            '<p class="muted small full">' + icon('shield', 'i-inline') + ' Nada é guardado nesta página. O CPF completo nunca é usado: os diários mostram só o meio dele (***.456.789-**).</p>' +
           '</form>' +
           '<div id="finder-out" class="finder-out"></div>' +
         '</div>' +
-        '<section class="section panel panel-pad"><span class="eyebrow">' + icon('info') + 'Dicas de quem já passou por isso</span><ul class="rules">' +
+        '<section class="section panel panel-pad"><span class="eyebrow">' + icon('info') + 'Dicas para a pesquisa</span><ul class="rules">' +
           '<li>Dentro do PDF, use <b>Ctrl+F</b> (no celular: menu ⋮ → <b>Localizar na página</b>) e procure pelo <b>sobrenome</b> ou pelo <b>número de inscrição</b>: nomes podem estar sem acento ou abreviados.</li>' +
           '<li>Listas de convocação costumam estar em <b>ordem alfabética</b> ou de <b>classificação</b>. Procure pelo título "Edital de convocação", "Resultado final" ou "Homologação".</li>' +
           '<li>Se o Google ainda não encontrou, o PDF pode ser de hoje: abra o diário do dia e use a busca do próprio site com o termo copiado.</li>' +
-          '<li>Crie um alerta grátis no Google Alerts com o seu nome entre aspas para ser avisado por e-mail.</li>' +
         '</ul></section>',
       after(view) {
         const out = $('#finder-out', view);
         const read = () => Object.assign(form, Object.fromEntries(new FormData($('#finder-form', view))));
 
-        function row(label, query, href, kind, shown) {
+        function row(label, query, href, kind, shown, btn) {
           return '<div class="row finder-row"><div class="grow"><div class="title">' + esc(label) + '</div><code class="query" title="' + esc(query) + '">' + esc(shown || query) + '</code></div>' +
             '<button class="icon-btn" type="button" data-copy-q="' + esc(query) + '" title="Copiar termo" aria-label="Copiar termo">' + icon('copy') + '</button>' +
-            '<a class="btn btn-sm ' + (kind === 'primary' ? 'btn-primary' : '') + '" href="' + esc(href) + '" target="_blank" rel="noopener">Buscar ' + icon('external') + '</a></div>';
+            '<a class="btn btn-sm ' + (kind === 'primary' ? 'btn-primary' : '') + '" href="' + esc(href) + '" target="_blank" rel="noopener">' + (btn || 'Buscar') + ' ' + icon('external') + '</a></div>';
         }
         function group(title, ic, desc, rows, link) {
           if (!rows.length) return '';
@@ -142,7 +172,7 @@
           const kw = extra ? ' ' + q(extra) : '';
           const main = ids.filter((x) => x.label !== 'Nome sem acentos').slice(0, 3);   // grupos secundários: sem repetições
 
-          let html = '<div class="finder-summary"><span class="badge accent">' + ids.length + ' formas de identificar você</span>' +
+          let html = '<div class="finder-summary"><span class="badge accent">' + ids.length + ' formas de identificar o cliente</span>' +
             (e ? '<span class="badge">' + esc(e.nome) + '</span>' : '<span class="badge">Federal</span>') + '</div>';
 
           // 1. Diário Oficial do Estado
@@ -186,60 +216,44 @@
           html += group('Prefeituras e internet em geral', 'search', 'Diários municipais e qualquer outro lugar indexado pelo Google.',
             [nome ? row('Diários municipais (Querido Diário)', nome, 'https://queridodiario.org.br') : '',
               row('Toda a internet', ids[0].term + (rgs.length && nome ? ' ' + q(rgs[0]) : '') + kw + ' concurso', google(ids[0].term + kw + ' concurso'))].filter(Boolean));
+          // 6. Alerta automático: o Google manda e-mail quando achar o nome numa página nova (bom para o acompanhamento).
+          if (nome) {
+            html += group('Alerta automático no Google', 'bell', 'Para acompanhamentos: o Google avisa por e-mail quando o nome aparecer numa página nova. Em "Mostrar opções", escolha "No máximo uma vez por dia" e "Todos os resultados". Se o termo não vier preenchido, cole o que foi copiado.',
+              ids.filter((x) => x.label === 'Nome completo' || x.label === 'Nome sem acentos').map((x) => row(x.label, x.term, alerts(x.term), '', '', 'Criar alerta')));
+          }
 
           out.innerHTML = html;
           A.hydrateIcons(out);
           if (window.innerWidth < 900) out.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
-        // Cada "Montar minhas buscas" conta uma busca grátis do dia (limite definido no Painel).
-        const left = $('#finder-left', view);
-        const showLeft = () => {
-          if (!left || !A.limits) return;
-          const n = A.limits.searchLeft();
-          left.textContent = n === Infinity ? '' : n + (n === 1 ? ' busca grátis restante hoje' : ' buscas grátis restantes hoje');
-        };
-        showLeft();
         $('#finder-form', view).addEventListener('submit', (ev) => {
           ev.preventDefault();
-          if (A.limits && !A.limits.useSearch()) {
-            out.innerHTML = A.limits.searchLimitHtml();
-            A.hydrateIcons(out);
-            out.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            return;
-          }
-          showLeft();
           build();
+          history.replaceState(null, '', toHash());
         });
         $('#f-uf', view).addEventListener('change', (ev) => {
           read(); form.uf = ev.target.value; form.org = ''; if (!form.rgUf) form.rgUf = form.uf;
-          const next = '#/meu-nome' + (form.uf ? '/' + form.uf : '');
+          const next = toHash();
           if (location.hash === next) A.render(); else location.hash = next;
-        });
-        $('#f-save', view).addEventListener('click', () => {
-          read();
-          Store.update((s) => { s.nameWatch = { nome: form.nome, rg: form.rg, rgUf: form.rgUf, insc: form.insc, uf: form.uf, org: form.org, extra: form.extra, banca: form.banca }; });
-          toast('Busca salva neste aparelho. Ela aparece na página inicial.');
         });
         out.addEventListener('click', (ev) => {
           const b = ev.target.closest('[data-copy-q]'); if (!b) return;
           A.copy(b.dataset.copyQ);
         });
         if (form.nome || form.rg || form.insc) build();
-        else out.innerHTML = '<div class="empty">' + icon('search') + '<h3>Suas buscas aparecem aqui</h3><p>Organizadas por lugar: Diário Oficial do estado, site do órgão, bancas, Diário Oficial da União e prefeituras.</p></div>';
+        else out.innerHTML = '<div class="empty">' + icon('search') + '<h3>As buscas aparecem aqui</h3><p>Organizadas por lugar: Diário Oficial do estado, site do órgão, bancas, Diário Oficial da União e prefeituras.</p></div>';
       }
     };
   });
 
-  // Atalho na página inicial para quem salvou a busca.
+  // Atalho na página inicial para o serviço pago.
   A.afterRender.push((view, cur) => {
-    if (cur.name !== 'home') return;
-    const w = Store.state.nameWatch;
+    if (cur.name !== 'home' || !A.services || !A.services.active()) return;
     const widgets = $('.widgets', view);
     if (!widgets) return;
-    const html = w && (w.nome || w.rg || w.insc)
-      ? '<div class="panel widget"><span class="w-label">' + icon('search') + 'Meu nome no Diário</span><span class="w-value" style="font-size:20px">' + esc((w.nome || 'RG ' + w.rg).split(' ')[0]) + '</span><span class="w-sub">Busca salva' + (w.uf ? ' · ' + esc(w.uf) : '') + '. Confira toda semana.</span><a class="w-link" href="#/meu-nome">Buscar de novo →</a></div>'
-      : '<div class="panel widget"><span class="w-label">' + icon('search') + 'Meu nome no Diário</span><span class="w-sub">Procure sua convocação pelo nome, RG ou inscrição em todos os diários de uma vez.</span><a class="w-link" href="#/meu-nome">Procurar agora →</a></div>';
-    widgets.insertAdjacentHTML('beforeend', html);
+    widgets.insertAdjacentHTML('beforeend', '<div class="panel widget"><span class="w-label">' + icon('search') + 'Meu nome no Diário</span>' +
+      '<span class="w-sub">Nós procuramos sua convocação no Diário Oficial, no site do órgão e na banca. ' + A.services.brl(A.services.price()) + ' no Pix, resultado no WhatsApp.</span>' +
+      '<a class="w-link" href="#/pesquisa-diario">Pedir a pesquisa →</a></div>');
   });
 })();

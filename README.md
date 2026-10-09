@@ -14,8 +14,8 @@ O Atlas Concursos reúne os endereços oficiais que todo concurseiro precisa: ba
 | **Categorias** | Órgãos federais, bancas, diários oficiais, segurança e Forças Armadas, tribunais/MP/Defensoria, fiscal e controle, legislativo, bancos e estatais, lei seca, estudo gratuito, notícias e documentos do candidato. |
 | **Hubs dos 27 estados** | Cada estado reúne seus "subsites": PM, Polícia Civil, Bombeiros, TJ, MP, Defensoria, TRE, TRT, TRF, Sefaz, TCE, Assembleia, Governo e Diário Oficial. Cada órgão tem atalho para "Editais no Diário Oficial" e para buscar "concurso/edital" dentro do próprio site. |
 | **Radar de Editais** ⭐ | A página dos **concursos com inscrição aberta hoje**: os conferidos pela equipe (cadastrados no painel) e os que o robô diário encontra nos sites oficiais com "inscrições abertas" ou "edital de abertura". Inscrição encerrada, resultado e gabarito não aparecem. Inclui a busca **"Procurar inscrições abertas nos sites oficiais"**, organizada por tipo de órgão (Polícias Militares, Polícias Civis, Bombeiros, TJs…) com botões por estado, começando por SP, RJ e MG. |
-| **Bancas ligadas ao concurso** ⭐ | Cada banca tem atalhos para *Inscrições abertas* e *Convocações e resultados*. Na Agenda, em "Meu nome no Diário" e no Radar, o botão **"Na banca"** abre a página onde a banca chama o candidato (link cadastrado no painel ou pesquisa no site da banca). |
-| **Meu nome no Diário Oficial** ⭐ | Busca avançada: o candidato informa nome, RG, nº de inscrição e estado, e o Atlas monta as buscas certas no Diário Oficial do estado, no site do órgão (ex.: PM), nas bancas, no DOU e nas prefeituras — com o RG em vários formatos e o CPF mascarado como os diários publicam (o CPF completo nunca é usado). Atalho "Procurar meu nome nos editais" em cada órgão estadual. |
+| **Bancas ligadas ao concurso** ⭐ | Cada banca tem atalhos para *Inscrições abertas* e *Convocações e resultados*. Na Agenda, na Busca da equipe e no Radar, o botão **"Na banca"** abre a página onde a banca chama o candidato (link cadastrado no painel ou pesquisa no site da banca). |
+| **Meu nome no Diário Oficial** ⭐ | Serviço pago: o candidato faz o pedido (`#/pesquisa-diario`) e a equipe procura. Não há versão grátis: o antigo `#/meu-nome` leva para o pedido. A equipe usa a **Busca da equipe** (`#/equipe/busca`, só aparece no aparelho em que o dono entrou no Painel com o token), que abre preenchida pelo botão "Abrir a busca" de cada pedido e monta as buscas no Diário Oficial do estado, no site do órgão, nas bancas, no DOU e nas prefeituras — com o RG em vários formatos, o CPF mascarado como os diários publicam e o botão **Criar alerta** do Google Alerts para os acompanhamentos. |
 | **Edital e Área do candidato** | Cada órgão tem atalhos para o edital e para a área do candidato (login da inscrição). Se houver concurso aberto cadastrado, os links vão direto para ele. |
 | **Descubra seu concurso** ⭐ | Teste de 4 perguntas que indica as carreiras ideais e os sites oficiais certos (inclusive do estado escolhido), com botão para salvar tudo e compartilhar. |
 | **Meus links** | Salve qualquer site com a ★, crie links próprios (ex.: a prefeitura da sua cidade), organize em pastas e escreva anotações. |
@@ -66,7 +66,6 @@ Configuráveis no Painel, aba **Limites de uso** (`limites` no `config.js`, 0 = 
 
 | Limite | Padrão |
 |---|---|
-| Buscas grátis por dia no "Meu nome no Diário" (visitante / com conta) | 5 / 15 |
 | Pedidos aguardando pagamento por pessoa | 2 |
 | Pedidos por dia por pessoa | 3 |
 | Concursos com lembrete no WhatsApp por pessoa | 3 |
@@ -101,9 +100,9 @@ Tudo é configurado pelo **Painel do Administrador** (ou em `assets/js/config.js
 | Bloco | O que faz | O que preencher |
 |---|---|---|
 | **Apoie o Atlas** (`#/apoie`) | Doação por Pix com QR Code e "copia e cola" gerados no navegador (padrão BR Code do Banco Central), com valores sugeridos de R$ 5 a R$ 50 ou valor livre. | `pix.chave`, `pix.nome`, `pix.cidade` |
-| **Anuncie no Atlas** (`#/anuncie`) | Página comercial com pacotes de patrocínio a preço fixo (a partir de R$ 29), regras de transparência e botão de WhatsApp/e-mail. | `contato.whatsapp` e/ou `contato.email`; preços em `pacotes` |
+| **Anuncie no Atlas** (`#/anuncie`) | Página comercial com pacotes de patrocínio a preço fixo (a partir de R$ 29), regras de transparência e botão de WhatsApp/e-mail. Fica escondida do menu e do rodapé até ser ligada no Painel (`mostrarAnuncie`); o link direto funciona sempre. A aba **Preços (Anuncie)** baixa a imagem dos planos para mandar às empresas. | `contato.whatsapp` e/ou `contato.email`; preços em `pacotes`; `mostrarAnuncie` |
 | **Cards "Patrocinado"** | Aparecem nas páginas escolhidas (início, Radar, Descubra, categorias, estados ou Ferramentas), no topo, no meio ou no fim. Período diário, semanal, quinzenal, mensal ou personalizado: entram na data de início e somem sozinhos na data final. A aba **Testar anúncios** mostra a prévia no celular e no computador e abre o site com o anúncio só para você. | `patrocinios` |
-| **Pesquisa no Diário Oficial** | Serviço pago (R$ 15) com Pix por pedido e atendimento no WhatsApp. | `servicos.diario`, `contato.whatsapp`, `pix` |
+| **Pesquisa no Diário Oficial** | Serviço pago (R$ 15) com Pix por pedido e atendimento no WhatsApp. O acompanhamento semanal (opcional) aparece na aba **Lembretes de hoje** do Painel quando chega a hora de conferir de novo ("Conferi hoje" agenda a próxima conferência para 7 dias depois). | `servicos.diario`, `servicos.acompanhamento`, `contato.whatsapp`, `pix` |
 | **Dica patrocinada** | Substitui a "Dica do dia" num dia específico. | `dicasPatrocinadas` |
 | **Recomendados (afiliados)** | Livros, cursos e materiais com link de afiliado, sempre com aviso de transparência. | `recomendados` |
 | **Lista de espera do Atlas Pro** | Chamada para um futuro plano pago (alertas de edital). | `listaEsperaPro` (link de um Google Forms) |
@@ -170,7 +169,7 @@ assets/js/app.js        núcleo: conta, rotas, busca, catálogo, estados, links,
 assets/js/tools.js      ferramentas de estudo
 assets/js/monetize.js   Pix, página de anúncios, patrocínios e afiliados
 assets/js/features.js   Radar de Editais e Descubra seu concurso
-assets/js/finder.js     Meu nome no Diário Oficial
+assets/js/finder.js     Busca da equipe (Meu nome no Diário Oficial)
 assets/js/agenda.js     concursos abertos conferidos (dados do painel)
 assets/js/radar.js      página Radar de Editais
 data/agenda.js          concursos abertos (editado pelo painel)

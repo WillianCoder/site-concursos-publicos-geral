@@ -232,8 +232,8 @@
         field('E-mail', 'email', 'email', ' required autocomplete="email" inputmode="email"') +
         field('Crie uma senha (mínimo 6 caracteres)', 'senha', 'password', ' required autocomplete="new-password" minlength="6"') +
         '<label class="field"><span>WhatsApp <span class="muted">(opcional, para lembretes)</span></span><input class="input" name="whatsapp" type="tel" autocomplete="tel" inputmode="tel" placeholder="(11) 91234-5678"></label>' +
-        '<label class="check"><input type="checkbox" name="aceitaWhats"> Quero receber no WhatsApp lembretes das minhas provas e avisos de inscrições abertas.</label>' +
-        '<label class="check"><input type="checkbox" name="termos" required> Li e aceito os <a class="grad-text" href="termos.html" target="_blank" rel="noopener">termos de uso</a> e a <a class="grad-text" href="privacidade.html" target="_blank" rel="noopener">política de privacidade</a>.</label>' +
+        '<label class="opt-check"><input type="checkbox" name="aceitaWhats"> Quero receber no WhatsApp lembretes das minhas provas e avisos de inscrições abertas.</label>' +
+        '<label class="opt-check"><input type="checkbox" name="termos" required> Li e aceito os <a class="grad-text" href="termos.html" target="_blank" rel="noopener">termos de uso</a> e a <a class="grad-text" href="privacidade.html" target="_blank" rel="noopener">política de privacidade</a>.</label>' +
         '<button class="btn btn-primary" type="submit">' + icon('check') + 'Criar conta grátis</button></form>';
     } else {
       form = '<form class="auth-form" id="auth-form" data-mode="senha" novalidate>' +
@@ -335,7 +335,7 @@
         '<span class="badge ' + st[0] + '">' + st[1] + '</span></div>' +
       '<form id="whats-form" class="auth-form" style="margin-bottom:12px">' +
         '<label class="field">WhatsApp<input class="input" name="whatsapp" type="tel" inputmode="tel" value="' + esc(p.whatsapp ? Cloud.fmtWhats(p.whatsapp) : '') + '" placeholder="(11) 91234-5678"></label>' +
-        '<label class="check"><input type="checkbox" name="aceitaWhats"' + (p.aceitaWhats ? ' checked' : '') + '> Receber lembretes e avisos no WhatsApp</label>' +
+        '<label class="opt-check"><input type="checkbox" name="aceitaWhats"' + (p.aceitaWhats ? ' checked' : '') + '> Receber lembretes e avisos no WhatsApp</label>' +
         '<div><button class="btn btn-sm" type="submit">' + icon('check') + 'Salvar</button></div></form>' +
       '<div class="btn-row">' +
         (u.emailVerified ? '' : '<button class="btn btn-sm" id="cloud-verify">Reenviar e-mail de confirmação</button>') +
