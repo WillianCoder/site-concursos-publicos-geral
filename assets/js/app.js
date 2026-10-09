@@ -867,18 +867,16 @@
           '</form>' +
           '<div style="display:flex;flex-direction:column;gap:16px">' +
             '<div class="panel panel-pad" id="cloud-box"></div>' +
-            '<div class="panel panel-pad" style="display:flex;flex-direction:column;gap:12px">' +
-              '<h2 style="font-size:18px">Backup e transferência</h2>' +
-              '<p class="muted small">Baixe um arquivo com todos os seus dados e restaure em outro navegador ou celular.</p>' +
+            (installPrompt ? '<div><button class="btn" id="install-btn">' + icon('install') + 'Instalar como aplicativo</button></div>' : '') +
+            // Backup manual e apagar dados: opções raras, ficam recolhidas (com a conta, tudo vai para a nuvem sozinho).
+            '<details class="panel panel-pad"><summary style="cursor:pointer;font-weight:600">Opções avançadas: backup manual e apagar dados</summary>' +
+            '<div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">' +
+              '<p class="muted small">Só para quem não usa a conta: baixe um arquivo com seus dados e restaure em outro navegador.</p>' +
               '<div class="btn-row"><button class="btn" data-action="export">' + icon('download') + 'Baixar backup</button>' +
               '<label class="btn">' + icon('upload') + 'Restaurar backup<input type="file" accept="application/json,.json" id="import-file" hidden></label></div>' +
-              (installPrompt ? '<button class="btn" id="install-btn">' + icon('install') + 'Instalar como aplicativo</button>' : '') +
-            '</div>' +
-            '<div class="panel panel-pad" style="display:flex;flex-direction:column;gap:10px">' +
-              '<h2 style="font-size:18px">Zona de perigo</h2>' +
-              '<p class="muted small">Apaga todos os dados deste aparelho. Faça um backup antes.</p>' +
+              '<p class="muted small">Apagar todos os dados deste aparelho:</p>' +
               '<div><button class="btn btn-danger" data-action="wipe">' + icon('trash') + 'Apagar meus dados</button></div>' +
-            '</div>' +
+            '</div></details>' +
           '</div>' +
         '</div>',
       after(view) {

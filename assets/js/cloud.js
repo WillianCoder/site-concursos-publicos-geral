@@ -312,7 +312,7 @@
     const title = '<h2 style="font-size:18px;display:flex;gap:8px;align-items:center">' + icon('cloud') + 'Minha conta Atlas</h2>';
     if (!Cloud.enabled) {
       box.innerHTML = title +
-        '<p class="muted small" style="margin-top:8px">Seus dados estão salvos <b>neste navegador</b>. Para usar em outro aparelho, baixe o backup e restaure no outro dispositivo.</p>';
+        '<p class="muted small" style="margin-top:8px">O login com e-mail e senha chega em breve. Até lá, seus links, concursos e estudos ficam salvos <b>neste aparelho</b>, sem precisar fazer nada.</p>';
       return;
     }
     if (!Cloud.ready) {
